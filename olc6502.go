@@ -2,6 +2,7 @@ package main
 
 import (
   "reflect"
+  "fmt"
 )
 
 type Olc6502 struct {
@@ -184,4 +185,25 @@ func (o *Olc6502) fetch() uint8 {
     o.fetched = o.read(o.addr_abs)
   }
   return o.fetched
+}
+
+func (o *Olc6502) disassemble(nStart uint16, nStop uint16) map[string] uint16 {
+  addr := uint32(nStart)
+  var value, lo, hi uint8 = 0x00, 0x00, 0x00
+  var mapLines map[string] uint16
+  var line_addr uint16 = 0
+
+  for addr <= uint32(nStop) {
+    line_addr = uint16(addr)
+
+    // Prefix line with instruction address
+    sInst := "$" + fmt.Sprintf("%x", addr) + ": "
+
+    // Read the instruction
+    opcode := uint8(o.bus.read(uint16(addr), true))
+    addr++
+    sInst += o.lookup[opcode].name + " "
+
+
+  }
 }
