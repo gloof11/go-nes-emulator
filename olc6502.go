@@ -2,7 +2,6 @@ package main
 
 import (
   "reflect"
-  "fmt"
 )
 
 type Olc6502 struct {
@@ -103,6 +102,11 @@ func (o *Olc6502) SetFlag(f string, v bool) {
 }
 
 // Necessary functions
+func (o *Olc6502) complete() bool {
+  return o.cycles == 0
+}
+
+
 func (o *Olc6502) clock() {
   if (o.cycles == 0) {
     o.opcode = o.read(o.pc)
@@ -187,23 +191,82 @@ func (o *Olc6502) fetch() uint8 {
   return o.fetched
 }
 
-func (o *Olc6502) disassemble(nStart uint16, nStop uint16) map[string] uint16 {
+func (o *Olc6502) disassemble(nStart uint16, nStop uint16) map[uint16] string {
   addr := uint32(nStart)
   var value, lo, hi uint8 = 0x00, 0x00, 0x00
-  var mapLines map[string] uint16
+  var mapLines = make(map[uint16]string)
   var line_addr uint16 = 0
 
   for addr <= uint32(nStop) {
     line_addr = uint16(addr)
 
     // Prefix line with instruction address
-    sInst := "$" + fmt.Sprintf("%x", addr) + ": "
+    sInst := "$" + hex(addr, 4) + ": "
 
     // Read the instruction
     opcode := uint8(o.bus.read(uint16(addr), true))
     addr++
     sInst += o.lookup[opcode].name + " "
 
+    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.IMP) {
+      sInst += " {IMP}"
+    } 
+    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.IMM) {
+      value = o.bus.read(uint16(addr), true); addr++
+      sInst += "#$" + hex(value, 2) + " {IMM}"
+    }
+    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.ZP0) {
+      lo = o.bus.read(uint16(addr), true); addr++
+      hi = 0x00
+      sInst += "$" + hex(lo, 2) + " {ZP0}"
+    }
+    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.ZPX) {
+      lo = o.bus.read(uint16(addr), true); addr++
+      hi = 0x00
+      sInst += "$" + hex(lo, 2) + ", X {ZPX}"
+    }
+    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.ZPY) {
+      lo = o.bus.read(uint16(addr), true); addr++
+      hi = 0x00
+      sInst += "$" + hex(lo, 2) + ", Y {ZPY}"
+    }
+    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.IZX) {
+      lo = o.bus.read(uint16(addr), true); addr++
+      hi = 0x00
+      sInst += "($" + hex(lo, 2) + ", X) {IZX}"
+    }
+    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.IZY) {
+      lo = o.bus.read(uint16(addr), true); addr++
+      hi = 0x00
+      sInst += "($" + hex(lo, 2) + ", Y) {IZY}"
+    }
+    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.ABS) {
+      lo = o.bus.read(uint16(addr), true); addr++
+      hi = o.bus.read(uint16(addr), true); addr++
+      sInst += "$" + hex(((hi << 8) | lo), 4) + " {ABS}"
+    }
+    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.ABX) {
+      lo = o.bus.read(uint16(addr), true); addr++
+      hi = o.bus.read(uint16(addr), true); addr++
+      sInst += "$" + hex(((hi << 8) | lo), 4) + ", X {ABX}"
+    }
+    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.ABY) {
+      lo = o.bus.read(uint16(addr), true); addr++
+      hi = o.bus.read(uint16(addr), true); addr++
+      sInst += "$" + hex(((hi << 8) | lo), 4) + ", Y {ABY}"
+    }
+    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.IND) {
+      lo = o.bus.read(uint16(addr), true); addr++
+      hi = o.bus.read(uint16(addr), true); addr++
+      sInst += "($" + hex(((hi << 8) | lo), 4) + ") {IND}"
+    }
+    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.REL) {
+      value = o.bus.read(uint16(addr), true); addr++
+      sInst += "$" + hex(value, 2) + " [$" + hex(uint8(addr) + value, 4) + "] {REL}"
+    }
 
+    mapLines[line_addr] = sInst + "\n"
   }
+
+  return mapLines
 }

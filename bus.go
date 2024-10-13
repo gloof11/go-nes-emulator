@@ -24,7 +24,7 @@ func (b *Bus) write(addr uint16, data uint8) {
 }
 
 func (b *Bus) read(addr uint16, bReadOnly bool) uint8 {
-  if (addr >= 0x0000 && addr <= 0xFFF){
+  if (addr >= 0x0000 && addr <= 0xFFFF) {
     return b.ram[addr]
   }
   return 0x00
