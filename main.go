@@ -64,9 +64,7 @@ func init() {
       log.Fatalf("Error parsing hex string: %v", err)
     }
 
-    // fmt.Printf("Loading %s into memory at byte %x\n", hexPair, nOffset)
     nes.ram[nOffset] = uint8(data) // Convert to uint8 and store in memory
-    // fmt.Printf("%s loaded into memory as %x\n", hexPair, nes.ram[nOffset])
 
     nOffset++
   }
