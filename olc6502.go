@@ -1,7 +1,7 @@
 package main
 
 import (
-  "reflect"
+	"reflect"
 )
 
 type Olc6502 struct {
@@ -23,8 +23,8 @@ type Olc6502 struct {
 
 type Instruction struct {
   name string
-  operate func() uint8
-  addrmode func() uint8
+  operate func(o *Olc6502) uint8
+  addrmode func(o *Olc6502) uint8
   cycles uint8
 }
 
@@ -33,14 +33,14 @@ func NewOlc6502(b *Bus) *Olc6502 {
   o.bus = b
 
   o.FLAGS6502 = map[string] uint8{ 
-    "C": 1 << 0,
-    "Z": 1 << 1,
-    "I": 1 << 2,
-    "D": 1 << 3,
-    "B": 1 << 4,
-    "U": 1 << 5,
-    "V": 1 << 6,
-    "N": 1 << 7,
+    "C": 1 << 0, // 1
+    "Z": 1 << 1, // 2
+    "I": 1 << 2, // 4
+    "D": 1 << 3, // 8
+    "B": 1 << 4, // 16
+    "U": 1 << 5, // 32
+    "V": 1 << 6, // 64
+    "N": 1 << 7, // 128
   }
   
   o.a = 0x00
@@ -110,13 +110,14 @@ func (o *Olc6502) complete() bool {
 func (o *Olc6502) clock() {
   if (o.cycles == 0) {
     o.opcode = o.read(o.pc)
+    o.SetFlag("U", true)
     o.pc++
 
     // Get starting number of cycles
     o.cycles = o.lookup[o.opcode].cycles
 
-    additional_cycle1 := o.lookup[o.opcode].addrmode()
-    additional_cycle2 :=o.lookup[o.opcode].operate()  
+    additional_cycle1 := o.lookup[o.opcode].addrmode(o)
+    additional_cycle2 := o.lookup[o.opcode].operate(o)  
 
     o.cycles += (additional_cycle1 & additional_cycle2)
   }

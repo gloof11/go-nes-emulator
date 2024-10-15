@@ -1,32 +1,31 @@
 package main
 
 // Addressing Modes
-func (o *Olc6502) IMP() uint8 { o.fetched = o.a; return 0 }
-func (o *Olc6502) IMM() uint8 {
-  pc := o.pc
-  pc++
-  o.addr_abs = pc
-  return 0 
+func (cpu *Olc6502) IMP(o *Olc6502) uint8 { o.fetched = o.a; return 0 }
+func (cpu *Olc6502) IMM(o *Olc6502) uint8 {
+  o.addr_abs = o.pc
+  o.pc++
+  return 0
 }
-func (o *Olc6502) ZP0() uint8 {
+func (cpu *Olc6502) ZP0(o *Olc6502) uint8 {
   o.addr_abs = uint16(o.read(o.pc))
   o.pc++
   o.addr_abs &= 0x00FF
   return 0
 }
-func (o *Olc6502) ZPX() uint8 {
+func (cpu *Olc6502) ZPX(o *Olc6502) uint8 {
   o.addr_abs = uint16(o.read(o.pc) + o.x)
   o.pc++
   o.addr_abs &= 0x00FF
   return 0
 }
-func (o *Olc6502) ZPY() uint8 {
+func (cpu *Olc6502) ZPY(o *Olc6502) uint8 {
   o.addr_abs = uint16(o.read(o.pc) + o.y)
   o.pc++
   o.addr_abs &= 0x00FF
   return 0
 }
-func (o *Olc6502) REL() uint8 {
+func (cpu *Olc6502) REL(o *Olc6502) uint8 {
   o.addr_rel = uint16(o.read(o.pc))
   o.pc++
   if ((o.addr_rel & 0x80) != 0) {  
@@ -34,7 +33,7 @@ func (o *Olc6502) REL() uint8 {
   }
   return 0
 }
-func (o *Olc6502) ABS() uint8 {
+func (cpu *Olc6502) ABS(o *Olc6502) uint8 {
   lo := uint16(o.read(o.pc))
   o.pc++
   hi := uint16(o.read(o.pc))
@@ -42,7 +41,7 @@ func (o *Olc6502) ABS() uint8 {
   o.addr_abs = (hi << 8) | lo
   return 0
 }
-func (o *Olc6502) ABX() uint8 {
+func (cpu *Olc6502) ABX(o *Olc6502) uint8 {
   lo := uint16(o.read(o.pc))
   o.pc++
   hi := uint16(o.read(o.pc))
@@ -56,7 +55,7 @@ func (o *Olc6502) ABX() uint8 {
     return 0
   }
 }
-func (o *Olc6502) ABY() uint8 {
+func (cpu *Olc6502) ABY(o *Olc6502) uint8 {
   lo := uint16(o.read(o.pc))
   o.pc++
   hi := uint16(o.read(o.pc))
@@ -70,7 +69,7 @@ func (o *Olc6502) ABY() uint8 {
     return 0
   }
 }
-func (o *Olc6502) IND() uint8 {
+func (cpu *Olc6502) IND(o *Olc6502) uint8 {
   ptr_lo := uint16(o.read(o.pc))
   o.pc++
   ptr_hi := uint16(o.read(o.pc))
@@ -85,7 +84,7 @@ func (o *Olc6502) IND() uint8 {
   }
   return 0
 }
-func (o *Olc6502) IZX() uint8 {
+func (cpu *Olc6502) IZX(o *Olc6502) uint8 {
   t := uint16(o.read(o.pc))
   o.pc++
 
@@ -95,7 +94,7 @@ func (o *Olc6502) IZX() uint8 {
   o.addr_abs = (hi << 8) | lo
   return 0
 }
-func (o *Olc6502) IZY() uint8 {
+func (cpu *Olc6502) IZY(o *Olc6502) uint8 {
   t := uint16(o.read(o.pc))
   o.pc++
 

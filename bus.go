@@ -18,7 +18,7 @@ func NewBus() *Bus {
 }
 
 func (b *Bus) write(addr uint16, data uint8) {
-  if (addr >= 0x0000 && addr <= 0xFFF){
+  if (addr >= 0x0000 && addr <= 0xFFFF){
     b.ram[addr] = data
   }
 }
