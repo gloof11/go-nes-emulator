@@ -1,33 +1,85 @@
 package main
 
+import (
+  "os"
+  "encoding/binary"
+)
+
 type Cartridge struct {
-
+  vPRGMemory []uint8
+  vCHRMemory []uint8
+  nMapperID uint8
+  nPRGBanks uint8
+  nCHRBanks uint8
 }
 
-func (b *Cartridge) PpuWrite(addr uint16, data uint8) {
-  if (addr >= 0x0000 && addr <= 0xFFFF){
-    b.cpuRam[addr & 0x07FF] = data
+func NewCartridge(filename string) *Cartridge {
+  cart := new(Cartridge)
+
+  cart.nMapperID = 0
+  cart.nPRGBanks = 0
+  cart.nCHRBanks = 0
+
+  type Header struct {
+    name [4]string
+    prg_rom_chunks uint8
+    chr_rom_chunks uint8
+    mapper1 uint8
+    mapper2 uint8
+    prg_ram_size uint8
+    tv_system1 uint8
+    unused [5]string
   }
+
+  header := Header{}
+
+  f, err := os.Open(filename)
+  if err != nil {
+    panic(err)
+  }
+  defer f.Close()
+
+  err = binary.Read(f, binary.LittleEndian, header)
+  if err != nil {
+    panic(err)
+  }
+
+  if (header.mapper1 & 0x04) != 0 {
+    f.Seek(512, 1)
+  }
+
+  cart.nMapperID = ((header.mapper2 >> 4) << 4 | (header.mapper1 >> 4) )
+
+  var nFileType uint8 = 1
+  
+  if nFileType == 0 {
+
+  }
+  if nFileType == 1 {
+    cart.nPRGBanks = header.prg_rom_chunks
+    cart.vPRGMemory = make([]uint8, 0, int(cart.nPRGBanks) * 16384)
+    f.Read(cart.vPRGMemory)
+
+    cart.nCHRBanks = header.chr_rom_chunks
+    cart.vCHRMemory = make([]uint8, 0, int(cart.nCHRBanks) * 8192)
+    f.Read(cart.vCHRMemory)
+  }
+
+  return cart
 }
 
-func (b *Cartridge) PpuRead(addr uint16, bReadOnly bool) uint8 {
-  data := uint8(0x00)
-  if (addr >= 0x0000 && addr <= 0x1FFF) {
-    data = b.cpuRam[addr & 0x07FF]
-  }
-  return data
+func (cart *Cartridge) PpuWrite(addr uint16, data uint8) bool {
+  return false
 }
 
-func (b *Cartridge) CpuWrite(addr uint16, data uint8) {
-  if (addr >= 0x0000 && addr <= 0xFFFF){
-    b.cpuRam[addr & 0x07FF] = data
-  }
+func (cart *Cartridge) PpuRead(addr uint16, bReadOnly bool) bool {
+  return false
 }
 
-func (b *Cartridge) CpuRead(addr uint16, bReadOnly bool) uint8 {
-  data := uint8(0x00)
-  if (addr >= 0x0000 && addr <= 0x1FFF) {
-    data = b.cpuRam[addr & 0x07FF]
-  }
-  return data
+func (cart *Cartridge) CpuWrite(addr uint16, data uint8) bool {
+  return false
+}
+
+func (cart *Cartridge) CpuRead(addr uint16, bReadOnly bool) bool {
+  return false
 }
