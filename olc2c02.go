@@ -1,19 +1,36 @@
 package main
 
+// import (
+//   "github.com/hajimehoshi/ebiten/v2"
+// 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+// 	"github.com/hajimehoshi/ebiten/v2/text/v2"
+//   "github.com/hajimehoshi/ebiten/v2/vector"
+// )
+
 type Olc2c02 struct {
   cart *Cartridge
   tblName [2][1024]uint8
   tblPalette [32]uint8
   tblPattern [2][4096]uint8 // Used for custom mappers
+
+  // palScreen[0x40]  
 }
 
 func (ppu *Olc2c02) PpuWrite(addr uint16, data uint8) {
   addr &= 0x3FFF
+
+  if ppu.cart.PpuWrite(addr, data) {
+
+  }
 }
 
 func (ppu *Olc2c02) PpuRead(addr uint16, bReadOnly bool) uint8 {
   var data uint8 = 0x00
   addr &= 0x3FFF
+
+  if ppu.cart.PpuRead(addr, data) {
+
+  }
 
   return data
 }

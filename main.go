@@ -14,6 +14,7 @@ import (
 
 	// "github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
+//   "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 var (
@@ -64,14 +65,17 @@ func init() {
       log.Fatalf("Error parsing hex string: %v", err)
     }
 
-    nes.ram[nOffset] = uint8(data) // Convert to uint8 and store in memory
+    nes.cpuRam[nOffset] = uint8(data) // Convert to uint8 and store in memory
 
     nOffset++
   }
 
   log.Println("Set the reset vector")
-  nes.ram[0xFFFC] = 0x00
-  nes.ram[0xFFFD] = 0x80
+  nes.cpuRam[0xFFFC] = 0x00
+  nes.cpuRam[0xFFFD] = 0x80
+
+  // cart := NewCartridge("nestest.nes")
+  // nes.InsertCartridge(cart)
 
   mapAsm = nes.cpu.disassemble(0x0000, 0xFFFF)
 
@@ -83,7 +87,7 @@ func DrawRam(screen *ebiten.Image, x float64, y float64, nAddr uint16, nRows int
   for row := 0; row < nRows; row ++ {
     sOffset := "$" + hex(nAddr, 4) + ":"
     for col := 0; col < nColumns; col++ {
-      sOffset += " " + hex(nes.read(nAddr, true), 2)
+      sOffset += " " + hex(nes.CpuRead(nAddr, true), 2)
       nAddr += 1
     }
     {
@@ -287,7 +291,9 @@ func DrawCode(screen *ebiten.Image, x float64, y float64, nLines int) {
   }
 }
 
-type Game struct{}
+type Game struct{
+  pixelImage *ebiten.Image
+}
 
 func (g *Game) Update() error {
   if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
@@ -327,19 +333,36 @@ func (g *Game) Draw(screen *ebiten.Image) {
     op.ColorScale.ScaleWithColor(color.White)
     text.Draw(screen, drawnString, mplusNormalFace, op)
   }
+  {
+    op := &ebiten.DrawImageOptions{}
+    op.GeoM.Scale(10, 10)
+    op.GeoM.Translate(50, 50)
+    screen.DrawImage(g.pixelImage, op)
+  }
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
   return windowWidth, windowHeight
 }
 
-func main() {
+func NewGame() *Game {
   ebiten.SetWindowSize(windowWidth, windowHeight)
   ebiten.SetWindowTitle("6502 Demonstration")
 
   nes.cpu.cycles = 0x00
 
-  if err := ebiten.RunGame(&Game{}); err != nil { 
+  img := ebiten.NewImage(1, 1)
+  img.Set(0, 0, color.RGBA{255, 0, 0, 255})   // Red pixel
+
+  return &Game{pixelImage: img}
+}
+
+func main() {
+  game := NewGame()
+  if err := ebiten.RunGame(game); err != nil { 
     log.Fatal(err)
   }
+  // if err := ebiten.RunGame(&Game{}); err != nil { 
+  //   log.Fatal(err)
+  // }
 }

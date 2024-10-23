@@ -34,14 +34,14 @@ func (b *Bus) CpuWrite(addr uint16, data uint8) {
 
 func (b *Bus) CpuRead(addr uint16, bReadOnly bool) uint8 {
   data := uint8(0x00)
-  if b.cart.CpuRead(addr, bReadOnly) {
+  if b.cart.CpuRead(addr, data) {
     
   } else if (addr >= 0x0000 && addr <= 0x1FFF) {
     data = b.cpuRam[addr & 0x07FF]
   } else if (addr >= 0x2000 && addr <= 0x3FFF) {
     data = b.ppu.CpuRead(addr & 0x0007, bReadOnly)
   }
-  return data
+  return b.cpuRam[addr]
 }
 
 func (b *Bus) InsertCartridge(cartridge *Cartridge){

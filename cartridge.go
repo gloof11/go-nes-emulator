@@ -11,6 +11,7 @@ type Cartridge struct {
   nMapperID uint8
   nPRGBanks uint8
   nCHRBanks uint8
+  pMapper MapperInterface
 }
 
 func NewCartridge(filename string) *Cartridge {
@@ -65,21 +66,63 @@ func NewCartridge(filename string) *Cartridge {
     f.Read(cart.vCHRMemory)
   }
 
+  switch cart.nMapperID {
+  case 0:
+    cart.pMapper = NewMapper0(cart.nPRGBanks, cart.nCHRBanks)
+  }
+
   return cart
 }
 
-func (cart *Cartridge) PpuWrite(addr uint16, data uint8) bool {
-  return false
-}
+func (cart *Cartridge) CpuRead(addr uint16, data uint8) bool {
+  // var mapped_addr uint32 = 0
+  
+  // if cart.pMapper.CpuMapRead(addr, mapped_addr) {
+  //   data = cart.vPRGMemory[mapped_addr]
+  //   return true
+  // } else {
+  //   return false
+  // }
 
-func (cart *Cartridge) PpuRead(addr uint16, bReadOnly bool) bool {
   return false
 }
 
 func (cart *Cartridge) CpuWrite(addr uint16, data uint8) bool {
+  // var mapped_addr uint32 = 0
+  //
+  // if cart.pMapper.CpuMapWrite(addr, mapped_addr) {
+  //   data = cart.vPRGMemory[mapped_addr]
+  //   return true
+  // } else {
+  //   return false
+  // }
+
   return false
 }
 
-func (cart *Cartridge) CpuRead(addr uint16, bReadOnly bool) bool {
+func (cart *Cartridge) PpuRead(addr uint16, data uint8) bool {
+  // var mapped_addr uint32 = 0
+  //
+  // if cart.pMapper.PpuMapRead(addr, mapped_addr) {
+  //   data = cart.vCHRMemory[mapped_addr]
+  //   return true
+  // } else {
+  //   return false
+  // }
+  
   return false
 }
+
+func (cart *Cartridge) PpuWrite(addr uint16, data uint8) bool {
+  // var mapped_addr uint32 = 0
+  //
+  // if cart.pMapper.PpuMapWrite(addr, mapped_addr) {
+  //   data = cart.vCHRMemory[mapped_addr]
+  //   return true
+  // } else {
+  //   return false
+  // }
+
+  return false
+}
+
