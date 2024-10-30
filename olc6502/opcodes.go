@@ -1,4 +1,8 @@
-package main
+package olc6502
+
+import (
+  "nes-emulator/helpers"
+)
 
 // Opcodes
 func (cpu *Olc6502) ADC(o *Olc6502) uint8 {
@@ -27,7 +31,7 @@ func (cpu *Olc6502) ASL(o *Olc6502) uint8 {
   o.SetFlag("Z", temp & 0x00FF == 0x00)
   o.SetFlag("N", temp & 0x80 != 0)
 
-  if findFunc(o.lookup[o.opcode].addrmode) == findFunc(o.IMP) {
+  if helpers.FindFunc(o.lookup[o.opcode].addrmode) == helpers.FindFunc(o.IMP) {
     o.a = uint8(temp & 0x00FF)
   } else {
     o.write(o.addr_abs, uint8(temp & 0x00FF))
@@ -306,7 +310,7 @@ func (cpu *Olc6502) LSR(o *Olc6502) uint8 {
   o.SetFlag("Z", temp & 0x00FF == 0x0000)
   o.SetFlag("N", temp & 0x0080 != 0)
 
-  if findFunc(o.lookup[o.opcode].addrmode) == findFunc(o.IMP) {
+  if helpers.FindFunc(o.lookup[o.opcode].addrmode) == helpers.FindFunc(o.IMP) {
     o.a = temp & 0x00FF
   } else {
     o.write(o.addr_abs, temp & 0x00FF)
@@ -364,7 +368,7 @@ func (cpu *Olc6502) ROL(o *Olc6502) uint8 {
   o.SetFlag("Z", temp & 0x00FF == 0x0000)
   o.SetFlag("N", temp & 0x0080 != 0)
 
-  if findFunc(o.lookup[o.opcode].addrmode) == findFunc(o.IMP) {
+  if helpers.FindFunc(o.lookup[o.opcode].addrmode) == helpers.FindFunc(o.IMP) {
     o.a = uint8(temp) & 0x00FF
   } else {
     o.write(o.addr_abs, uint8(temp) & 0x00FF)
@@ -383,7 +387,7 @@ func (cpu *Olc6502) ROR(o *Olc6502) uint8 {
   if temp & 0x0080 != 0 {
     o.SetFlag("N", true)
   }
-  if findFunc(o.lookup[o.opcode].addrmode) == findFunc(o.IMP) {
+  if helpers.FindFunc(o.lookup[o.opcode].addrmode) == helpers.FindFunc(o.IMP) {
     o.a = uint8(temp) & 0x00FF
   } else {
     o.write(o.addr_abs, uint8(temp) & 0x00FF)

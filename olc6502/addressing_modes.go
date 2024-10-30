@@ -1,4 +1,4 @@
-package main
+package olc6502
 
 // Addressing Modes
 func (cpu *Olc6502) IMP(o *Olc6502) uint8 { o.fetched = o.a; return 0 }

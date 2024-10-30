@@ -7,6 +7,7 @@ import (
 	"log"
 	"reflect"
 	"strconv"
+  "nes-emulator/bus"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -17,7 +18,7 @@ import (
 )
 
 var (
-  nes = NewBus()
+  nes = bus.NewBus()
   mapAsm map[uint16] string
 )
 

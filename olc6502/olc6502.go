@@ -1,11 +1,12 @@
-package main
+package olc6502
 
 import (
 	"reflect"
+  "nes-emulator/helpers"
 )
 
 type Olc6502 struct {
-  bus *Bus
+  ram *[64*1024]uint8
   FLAGS6502 map[string] uint8
   a uint8 
   x uint8
@@ -28,9 +29,9 @@ type Instruction struct {
   cycles uint8
 }
 
-func NewOlc6502(b *Bus) *Olc6502 {
+func NewOlc6502(ram *[64*1024]uint8) *Olc6502 {
   o := new(Olc6502)
-  o.bus = b
+  o.ram = ram
 
   o.FLAGS6502 = map[string] uint8{ 
     "C": 1 << 0, // 1
@@ -77,12 +78,17 @@ func NewOlc6502(b *Bus) *Olc6502 {
   return o
 }
 
-func (o *Olc6502) read(a uint16) uint8 {
-  return o.bus.read(a, false)
+func (o *Olc6502) read(a uint16, bReadOnly ...bool) uint8 {
+  if (a >= 0x0000 && a <= 0xFFFF) {
+    return o.ram[a]
+  }
+  return 0x00
 }
 
 func (o *Olc6502) write(a uint16, d uint8) {
-  o.bus.write(a, d)
+  if (a >= 0x0000 && a <= 0xFFFF){
+    o.ram[a] = d
+  }
 }
 
 func (o *Olc6502) GetFlag(f string) uint8 {
@@ -202,68 +208,68 @@ func (o *Olc6502) disassemble(nStart uint16, nStop uint16) map[uint16] string {
     line_addr = uint16(addr)
 
     // Prefix line with instruction address
-    sInst := "$" + hex(addr, 4) + ": "
+    sInst := "$" + helpers.Hex(addr, 4) + ": "
 
     // Read the instruction
-    opcode := uint8(o.bus.read(uint16(addr), true))
+    opcode := uint8(o.read(uint16(addr), true))
     addr++
     sInst += o.lookup[opcode].name + " "
 
-    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.IMP) {
+    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.IMP) {
       sInst += " {IMP}"
     } 
-    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.IMM) {
-      value = o.bus.read(uint16(addr), true); addr++
-      sInst += "#$" + hex(value, 2) + " {IMM}"
+    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.IMM) {
+      value = o.read(uint16(addr), true); addr++
+      sInst += "#$" + helpers.Hex(value, 2) + " {IMM}"
     }
-    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.ZP0) {
-      lo = o.bus.read(uint16(addr), true); addr++
+    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.ZP0) {
+      lo = o.read(uint16(addr), true); addr++
       hi = 0x00
-      sInst += "$" + hex(lo, 2) + " {ZP0}"
+      sInst += "$" + helpers.Hex(lo, 2) + " {ZP0}"
     }
-    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.ZPX) {
-      lo = o.bus.read(uint16(addr), true); addr++
+    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.ZPX) {
+      lo = o.read(uint16(addr), true); addr++
       hi = 0x00
-      sInst += "$" + hex(lo, 2) + ", X {ZPX}"
+      sInst += "$" + helpers.Hex(lo, 2) + ", X {ZPX}"
     }
-    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.ZPY) {
-      lo = o.bus.read(uint16(addr), true); addr++
+    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.ZPY) {
+      lo = o.read(uint16(addr), true); addr++
       hi = 0x00
-      sInst += "$" + hex(lo, 2) + ", Y {ZPY}"
+      sInst += "$" + helpers.Hex(lo, 2) + ", Y {ZPY}"
     }
-    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.IZX) {
-      lo = o.bus.read(uint16(addr), true); addr++
+    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.IZX) {
+      lo = o.read(uint16(addr), true); addr++
       hi = 0x00
-      sInst += "($" + hex(lo, 2) + ", X) {IZX}"
+      sInst += "($" + helpers.Hex(lo, 2) + ", X) {IZX}"
     }
-    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.IZY) {
-      lo = o.bus.read(uint16(addr), true); addr++
+    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.IZY) {
+      lo = o.read(uint16(addr), true); addr++
       hi = 0x00
-      sInst += "($" + hex(lo, 2) + ", Y) {IZY}"
+      sInst += "($" + helpers.Hex(lo, 2) + ", Y) {IZY}"
     }
-    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.ABS) {
-      lo = o.bus.read(uint16(addr), true); addr++
-      hi = o.bus.read(uint16(addr), true); addr++
-      sInst += "$" + hex(((hi << 8) | lo), 4) + " {ABS}"
+    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.ABS) {
+      lo = o.read(uint16(addr), true); addr++
+      hi = o.read(uint16(addr), true); addr++
+      sInst += "$" + helpers.Hex(((hi << 8) | lo), 4) + " {ABS}"
     }
-    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.ABX) {
-      lo = o.bus.read(uint16(addr), true); addr++
-      hi = o.bus.read(uint16(addr), true); addr++
-      sInst += "$" + hex(((hi << 8) | lo), 4) + ", X {ABX}"
+    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.ABX) {
+      lo = o.read(uint16(addr), true); addr++
+      hi = o.read(uint16(addr), true); addr++
+      sInst += "$" + helpers.Hex(((hi << 8) | lo), 4) + ", X {ABX}"
     }
-    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.ABY) {
-      lo = o.bus.read(uint16(addr), true); addr++
-      hi = o.bus.read(uint16(addr), true); addr++
-      sInst += "$" + hex(((hi << 8) | lo), 4) + ", Y {ABY}"
+    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.ABY) {
+      lo = o.read(uint16(addr), true); addr++
+      hi = o.read(uint16(addr), true); addr++
+      sInst += "$" + helpers.Hex(((hi << 8) | lo), 4) + ", Y {ABY}"
     }
-    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.IND) {
-      lo = o.bus.read(uint16(addr), true); addr++
-      hi = o.bus.read(uint16(addr), true); addr++
-      sInst += "($" + hex(((hi << 8) | lo), 4) + ") {IND}"
+    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.IND) {
+      lo = o.read(uint16(addr), true); addr++
+      hi = o.read(uint16(addr), true); addr++
+      sInst += "($" + helpers.Hex(((hi << 8) | lo), 4) + ") {IND}"
     }
-    if findFunc(o.lookup[opcode].addrmode) == findFunc(o.REL) {
-      value = o.bus.read(uint16(addr), true); addr++
-      sInst += "$" + hex(value, 2) + " [$" + hex(uint8(addr) + value, 4) + "] {REL}"
+    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.REL) {
+      value = o.read(uint16(addr), true); addr++
+      sInst += "$" + helpers.Hex(value, 2) + " [$" + helpers.Hex(uint8(addr) + value, 4) + "] {REL}"
     }
 
     mapLines[line_addr] = sInst + "\n"

@@ -1,7 +1,11 @@
-package main
+package bus
+
+import (
+  "nes-emulator/olc6502"
+)
 
 type Bus struct {
-  cpu Olc6502
+  cpu olc6502.Olc6502
   ram [64*1024]uint8
 }
 
@@ -12,7 +16,7 @@ func NewBus() *Bus {
     b.ram[i] = 0x00
   }
 
-  b.cpu = *NewOlc6502(b)
+  b.cpu = *olc6502.NewOlc6502(&b.ram)
 
   return b
 }
