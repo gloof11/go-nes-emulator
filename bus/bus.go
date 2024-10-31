@@ -9,14 +9,14 @@ type Bus struct {
   Ram [64*1024]uint8
 }
 
-func NewBus() *Bus {
-  b := new(Bus)
+func NewBus() Bus {
+  b := Bus{}
   
   for i := range b.Ram {
     b.Ram[i] = 0x00
   }
 
-  b.Cpu = *olc6502.NewOlc6502(&b.Ram)
+  b.Cpu = olc6502.NewOlc6502(&b.Ram)
 
   return b
 }

@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"image/color"
 	"log"
+	"nes-emulator/bus"
+	"nes-emulator/olc6502"
 	"reflect"
 	"strconv"
-  "nes-emulator/bus"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -113,7 +114,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x + 64, y)
-    if nes.Cpu.Status & nes.Cpu.FLAGS6502["N"] == nes.Cpu.FLAGS6502["N"] {
+    if nes.Cpu.Status & olc6502.Flags6502["N"] == olc6502.Flags6502["N"] {
       op.ColorScale.ScaleWithColor(color.RGBA{0, 255, 0, 0})
     } else {
       op.ColorScale.ScaleWithColor(color.RGBA{255, 0, 0, 0})
@@ -125,7 +126,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x + 80, y)
-    if nes.Cpu.Status & nes.Cpu.FLAGS6502["V"] == nes.Cpu.FLAGS6502["V"] {
+    if nes.Cpu.Status & olc6502.Flags6502["V"] == olc6502.Flags6502["V"] {
       op.ColorScale.ScaleWithColor(color.RGBA{0, 255, 0, 0})
     } else {
       op.ColorScale.ScaleWithColor(color.RGBA{255, 0, 0, 0})
@@ -137,7 +138,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x + 96, y)
-    if nes.Cpu.Status & nes.Cpu.FLAGS6502["U"] == nes.Cpu.FLAGS6502["U"] {
+    if nes.Cpu.Status & olc6502.Flags6502["U"] == olc6502.Flags6502["U"] {
       op.ColorScale.ScaleWithColor(color.RGBA{0, 255, 0, 0})
     } else {
       op.ColorScale.ScaleWithColor(color.RGBA{255, 0, 0, 0})
@@ -149,7 +150,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x + 112, y)
-    if nes.Cpu.Status & nes.Cpu.FLAGS6502["B"] == nes.Cpu.FLAGS6502["B"] {
+    if nes.Cpu.Status & olc6502.Flags6502["B"] == olc6502.Flags6502["B"] {
       op.ColorScale.ScaleWithColor(color.RGBA{0, 255, 0, 0})
     } else {
       op.ColorScale.ScaleWithColor(color.RGBA{255, 0, 0, 0})
@@ -161,7 +162,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x + 128, y)
-    if nes.Cpu.Status & nes.Cpu.FLAGS6502["D"] == nes.Cpu.FLAGS6502["D"] {
+    if nes.Cpu.Status & olc6502.Flags6502["D"] == olc6502.Flags6502["D"] {
       op.ColorScale.ScaleWithColor(color.RGBA{0, 255, 0, 0})
     } else {
       op.ColorScale.ScaleWithColor(color.RGBA{255, 0, 0, 0})
@@ -173,7 +174,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x + 144, y)
-    if nes.Cpu.Status & nes.Cpu.FLAGS6502["I"] == nes.Cpu.FLAGS6502["I"] {
+    if nes.Cpu.Status & olc6502.Flags6502["I"] == olc6502.Flags6502["I"] {
       op.ColorScale.ScaleWithColor(color.RGBA{0, 255, 0, 0})
     } else {
       op.ColorScale.ScaleWithColor(color.RGBA{255, 0, 0, 0})
@@ -185,7 +186,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x + 160, y)
-    if nes.Cpu.Status & nes.Cpu.FLAGS6502["Z"] == nes.Cpu.FLAGS6502["Z"] {
+    if nes.Cpu.Status & olc6502.Flags6502["Z"] == olc6502.Flags6502["Z"] {
       op.ColorScale.ScaleWithColor(color.RGBA{0, 255, 0, 0})
     } else {
       op.ColorScale.ScaleWithColor(color.RGBA{255, 0, 0, 0})
@@ -197,7 +198,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x + 178, y)
-    if nes.Cpu.Status & nes.Cpu.FLAGS6502["C"] == nes.Cpu.FLAGS6502["C"] {
+    if nes.Cpu.Status & olc6502.Flags6502["C"] == olc6502.Flags6502["C"] {
       op.ColorScale.ScaleWithColor(color.RGBA{0, 255, 0, 0})
     } else {
       op.ColorScale.ScaleWithColor(color.RGBA{255, 0, 0, 0})

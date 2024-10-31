@@ -7,7 +7,6 @@ import (
 
 type Olc6502 struct {
   ram *[64*1024]uint8
-  FLAGS6502 map[string] uint8
   A uint8 
   X uint8
   Y uint8
@@ -19,21 +18,20 @@ type Olc6502 struct {
   addr_rel uint16
   opcode uint8
   Cycles uint8
-  lookup []Instruction
 }
 
-type Instruction struct {
+type instruction struct {
   name string
   operate func(o *Olc6502) uint8
   addrmode func(o *Olc6502) uint8
   cycles uint8
 }
 
-func NewOlc6502(ram *[64*1024]uint8) *Olc6502 {
-  o := new(Olc6502)
-  o.ram = ram
+var lookup []instruction
+var Flags6502 map[string] uint8
 
-  o.FLAGS6502 = map[string] uint8{ 
+func init() {
+  Flags6502 = map[string] uint8{ 
     "C": 1 << 0, // 1
     "Z": 1 << 1, // 2
     "I": 1 << 2, // 4
@@ -43,6 +41,31 @@ func NewOlc6502(ram *[64*1024]uint8) *Olc6502 {
     "V": 1 << 6, // 64
     "N": 1 << 7, // 128
   }
+
+  lookup = []instruction{
+    {"BRK",BRK,IMM,7},{"ORA",ORA,IZX,6},{"???",XXX,IMP,2},{"???",XXX,IMP,8},{"???",NOP,IMP,3},{"ORA",ORA,ZP0,3},{"ASL",ASL,ZP0,5},{"???",XXX,IMP,5},{"PHP",PHP,IMP,3},{"ORA",ORA,IMM,2},{"ASL",ASL,IMP,2},{"???",XXX,IMP,2},{"???",NOP,IMP,4},{"ORA",ORA,ABS,4},{"ASL",ASL,ABS,6},{"???",XXX,IMP,6},
+		{"BPL",BPL,REL,2},{"ORA",ORA,IZY,5},{"???",XXX,IMP,2},{"???",XXX,IMP,8},{"???",NOP,IMP,4},{"ORA",ORA,ZPX,4},{"ASL",ASL,ZPX,6},{"???",XXX,IMP,6},{"CLC",CLC,IMP,2},{"ORA",ORA,ABY,4},{"???",NOP,IMP,2},{"???",XXX,IMP,7},{"???",NOP,IMP,4},{"ORA",ORA,ABX,4},{"ASL",ASL,ABX,7},{"???",XXX,IMP,7},
+		{"JSR",JSR,ABS,6},{"AND",AND,IZX,6},{"???",XXX,IMP,2},{"???",XXX,IMP,8},{"BIT",BIT,ZP0,3},{"AND",AND,ZP0,3},{"ROL",ROL,ZP0,5},{"???",XXX,IMP,5},{"PLP",PLP,IMP,4},{"AND",AND,IMM,2},{"ROL",ROL,IMP,2},{"???",XXX,IMP,2},{"BIT",BIT,ABS,4},{"AND",AND,ABS,4},{"ROL",ROL,ABS,6},{"???",XXX,IMP,6},
+		{"BMI",BMI,REL,2},{"AND",AND,IZY,5},{"???",XXX,IMP,2},{"???",XXX,IMP,8},{"???",NOP,IMP,4},{"AND",AND,ZPX,4},{"ROL",ROL,ZPX,6},{"???",XXX,IMP,6},{"SEC",SEC,IMP,2},{"AND",AND,ABY,4},{"???",NOP,IMP,2},{"???",XXX,IMP,7},{"???",NOP,IMP,4},{"AND",AND,ABX,4},{"ROL",ROL,ABX,7},{"???",XXX,IMP,7},
+		{"RTI",RTI,IMP,6},{"EOR",EOR,IZX,6},{"???",XXX,IMP,2},{"???",XXX,IMP,8},{"???",NOP,IMP,3},{"EOR",EOR,ZP0,3},{"LSR",LSR,ZP0,5},{"???",XXX,IMP,5},{"PHA",PHA,IMP,3},{"EOR",EOR,IMM,2},{"LSR",LSR,IMP,2},{"???",XXX,IMP,2},{"JMP",JMP,ABS,3},{"EOR",EOR,ABS,4},{"LSR",LSR,ABS,6},{"???",XXX,IMP,6},
+		{"BVC",BVC,REL,2},{"EOR",EOR,IZY,5},{"???",XXX,IMP,2},{"???",XXX,IMP,8},{"???",NOP,IMP,4},{"EOR",EOR,ZPX,4},{"LSR",LSR,ZPX,6},{"???",XXX,IMP,6},{"CLI",CLI,IMP,2},{"EOR",EOR,ABY,4},{"???",NOP,IMP,2},{"???",XXX,IMP,7},{"???",NOP,IMP,4},{"EOR",EOR,ABX,4},{"LSR",LSR,ABX,7},{"???",XXX,IMP,7},
+		{"RTS",RTS,IMP,6},{"ADC",ADC,IZX,6},{"???",XXX,IMP,2},{"???",XXX,IMP,8},{"???",NOP,IMP,3},{"ADC",ADC,ZP0,3},{"ROR",ROR,ZP0,5},{"???",XXX,IMP,5},{"PLA",PLA,IMP,4},{"ADC",ADC,IMM,2},{"ROR",ROR,IMP,2},{"???",XXX,IMP,2},{"JMP",JMP,IND,5},{"ADC",ADC,ABS,4},{"ROR",ROR,ABS,6},{"???",XXX,IMP,6},
+		{"BVS",BVS,REL,2},{"ADC",ADC,IZY,5},{"???",XXX,IMP,2},{"???",XXX,IMP,8},{"???",NOP,IMP,4},{"ADC",ADC,ZPX,4},{"ROR",ROR,ZPX,6},{"???",XXX,IMP,6},{"SEI",SEI,IMP,2},{"ADC",ADC,ABY,4},{"???",NOP,IMP,2},{"???",XXX,IMP,7},{"???",NOP,IMP,4},{"ADC",ADC,ABX,4},{"ROR",ROR,ABX,7},{"???",XXX,IMP,7},
+		{"???",NOP,IMP,2},{"STA",STA,IZX,6},{"???",NOP,IMP,2},{"???",XXX,IMP,6},{"STY",STY,ZP0,3},{"STA",STA,ZP0,3},{"STX",STX,ZP0,3},{"???",XXX,IMP,3},{"DEY",DEY,IMP,2},{"???",NOP,IMP,2},{"TXA",TXA,IMP,2},{"???",XXX,IMP,2},{"STY",STY,ABS,4},{"STA",STA,ABS,4},{"STX",STX,ABS,4},{"???",XXX,IMP,4},
+		{"BCC",BCC,REL,2},{"STA",STA,IZY,6},{"???",XXX,IMP,2},{"???",XXX,IMP,6},{"STY",STY,ZPX,4},{"STA",STA,ZPX,4},{"STX",STX,ZPY,4},{"???",XXX,IMP,4},{"TYA",TYA,IMP,2},{"STA",STA,ABY,5},{"TXS",TXS,IMP,2},{"???",XXX,IMP,5},{"???",NOP,IMP,5},{"STA",STA,ABX,5},{"???",XXX,IMP,5},{"???",XXX,IMP,5},
+		{"LDY",LDY,IMM,2},{"LDA",LDA,IZX,6},{"LDX",LDX,IMM,2},{"???",XXX,IMP,6},{"LDY",LDY,ZP0,3},{"LDA",LDA,ZP0,3},{"LDX",LDX,ZP0,3},{"???",XXX,IMP,3},{"TAY",TAY,IMP,2},{"LDA",LDA,IMM,2},{"TAX",TAX,IMP,2},{"???",XXX,IMP,2},{"LDY",LDY,ABS,4},{"LDA",LDA,ABS,4},{"LDX",LDX,ABS,4},{"???",XXX,IMP,4},
+		{"BCS",BCS,REL,2},{"LDA",LDA,IZY,5},{"???",XXX,IMP,2},{"???",XXX,IMP,5},{"LDY",LDY,ZPX,4},{"LDA",LDA,ZPX,4},{"LDX",LDX,ZPY,4},{"???",XXX,IMP,4},{"CLV",CLV,IMP,2},{"LDA",LDA,ABY,4},{"TSX",TSX,IMP,2},{"???",XXX,IMP,4},{"LDY",LDY,ABX,4},{"LDA",LDA,ABX,4},{"LDX",LDX,ABY,4},{"???",XXX,IMP,4},
+		{"CPY",CPY,IMM,2},{"CMP",CMP,IZX,6},{"???",NOP,IMP,2},{"???",XXX,IMP,8},{"CPY",CPY,ZP0,3},{"CMP",CMP,ZP0,3},{"DEC",DEC,ZP0,5},{"???",XXX,IMP,5},{"INY",INY,IMP,2},{"CMP",CMP,IMM,2},{"DEX",DEX,IMP,2},{"???",XXX,IMP,2},{"CPY",CPY,ABS,4},{"CMP",CMP,ABS,4},{"DEC",DEC,ABS,6},{"???",XXX,IMP,6},
+		{"BNE",BNE,REL,2},{"CMP",CMP,IZY,5},{"???",XXX,IMP,2},{"???",XXX,IMP,8},{"???",NOP,IMP,4},{"CMP",CMP,ZPX,4},{"DEC",DEC,ZPX,6},{"???",XXX,IMP,6},{"CLD",CLD,IMP,2},{"CMP",CMP,ABY,4},{"NOP",NOP,IMP,2},{"???",XXX,IMP,7},{"???",NOP,IMP,4},{"CMP",CMP,ABX,4},{"DEC",DEC,ABX,7},{"???",XXX,IMP,7},
+		{"CPX",CPX,IMM,2},{"SBC",SBC,IZX,6},{"???",NOP,IMP,2},{"???",XXX,IMP,8},{"CPX",CPX,ZP0,3},{"SBC",SBC,ZP0,3},{"INC",INC,ZP0,5},{"???",XXX,IMP,5},{"INX",INX,IMP,2},{"SBC",SBC,IMM,2},{"NOP",NOP,IMP,2},{"???",SBC,IMP,2},{"CPX",CPX,ABS,4},{"SBC",SBC,ABS,4},{"INC",INC,ABS,6},{"???",XXX,IMP,6},
+		{"BEQ",BEQ,REL,2},{"SBC",SBC,IZY,5},{"???",XXX,IMP,2},{"???",XXX,IMP,8},{"???",NOP,IMP,4},{"SBC",SBC,ZPX,4},{"INC",INC,ZPX,6},{"???",XXX,IMP,6},{"SED",SED,IMP,2},{"SBC",SBC,ABY,4},{"NOP",NOP,IMP,2},{"???",XXX,IMP,7},{"???",NOP,IMP,4},{"SBC",SBC,ABX,4},{"INC",INC,ABX,7},{"???",XXX,IMP,7},
+  }
+}
+
+func NewOlc6502(ram *[64*1024]uint8) Olc6502 {
+  o := Olc6502{}
+  o.ram = ram
+
   
   o.A = 0x00
   o.X = 0x00
@@ -56,43 +79,25 @@ func NewOlc6502(ram *[64*1024]uint8) *Olc6502 {
   o.opcode = 0x00
   o.Cycles = 0
 
-  o.lookup = []Instruction{
-    {"BRK",o.BRK,o.IMM,7},{"ORA",o.ORA,o.IZX,6},{"???",o.XXX,o.IMP,2},{"???",o.XXX,o.IMP,8},{"???",o.NOP,o.IMP,3},{"ORA",o.ORA,o.ZP0,3},{"ASL",o.ASL,o.ZP0,5},{"???",o.XXX,o.IMP,5},{"PHP",o.PHP,o.IMP,3},{"ORA",o.ORA,o.IMM,2},{"ASL",o.ASL,o.IMP,2},{"???",o.XXX,o.IMP,2},{"???",o.NOP,o.IMP,4},{"ORA",o.ORA,o.ABS,4},{"ASL",o.ASL,o.ABS,6},{"???",o.XXX,o.IMP,6},
-		{"BPL",o.BPL,o.REL,2},{"ORA",o.ORA,o.IZY,5},{"???",o.XXX,o.IMP,2},{"???",o.XXX,o.IMP,8},{"???",o.NOP,o.IMP,4},{"ORA",o.ORA,o.ZPX,4},{"ASL",o.ASL,o.ZPX,6},{"???",o.XXX,o.IMP,6},{"CLC",o.CLC,o.IMP,2},{"ORA",o.ORA,o.ABY,4},{"???",o.NOP,o.IMP,2},{"???",o.XXX,o.IMP,7},{"???",o.NOP,o.IMP,4},{"ORA",o.ORA,o.ABX,4},{"ASL",o.ASL,o.ABX,7},{"???",o.XXX,o.IMP,7},
-		{"JSR",o.JSR,o.ABS,6},{"AND",o.AND,o.IZX,6},{"???",o.XXX,o.IMP,2},{"???",o.XXX,o.IMP,8},{"BIT",o.BIT,o.ZP0,3},{"AND",o.AND,o.ZP0,3},{"ROL",o.ROL,o.ZP0,5},{"???",o.XXX,o.IMP,5},{"PLP",o.PLP,o.IMP,4},{"AND",o.AND,o.IMM,2},{"ROL",o.ROL,o.IMP,2},{"???",o.XXX,o.IMP,2},{"BIT",o.BIT,o.ABS,4},{"AND",o.AND,o.ABS,4},{"ROL",o.ROL,o.ABS,6},{"???",o.XXX,o.IMP,6},
-		{"BMI",o.BMI,o.REL,2},{"AND",o.AND,o.IZY,5},{"???",o.XXX,o.IMP,2},{"???",o.XXX,o.IMP,8},{"???",o.NOP,o.IMP,4},{"AND",o.AND,o.ZPX,4},{"ROL",o.ROL,o.ZPX,6},{"???",o.XXX,o.IMP,6},{"SEC",o.SEC,o.IMP,2},{"AND",o.AND,o.ABY,4},{"???",o.NOP,o.IMP,2},{"???",o.XXX,o.IMP,7},{"???",o.NOP,o.IMP,4},{"AND",o.AND,o.ABX,4},{"ROL",o.ROL,o.ABX,7},{"???",o.XXX,o.IMP,7},
-		{"RTI",o.RTI,o.IMP,6},{"EOR",o.EOR,o.IZX,6},{"???",o.XXX,o.IMP,2},{"???",o.XXX,o.IMP,8},{"???",o.NOP,o.IMP,3},{"EOR",o.EOR,o.ZP0,3},{"LSR",o.LSR,o.ZP0,5},{"???",o.XXX,o.IMP,5},{"PHA",o.PHA,o.IMP,3},{"EOR",o.EOR,o.IMM,2},{"LSR",o.LSR,o.IMP,2},{"???",o.XXX,o.IMP,2},{"JMP",o.JMP,o.ABS,3},{"EOR",o.EOR,o.ABS,4},{"LSR",o.LSR,o.ABS,6},{"???",o.XXX,o.IMP,6},
-		{"BVC",o.BVC,o.REL,2},{"EOR",o.EOR,o.IZY,5},{"???",o.XXX,o.IMP,2},{"???",o.XXX,o.IMP,8},{"???",o.NOP,o.IMP,4},{"EOR",o.EOR,o.ZPX,4},{"LSR",o.LSR,o.ZPX,6},{"???",o.XXX,o.IMP,6},{"CLI",o.CLI,o.IMP,2},{"EOR",o.EOR,o.ABY,4},{"???",o.NOP,o.IMP,2},{"???",o.XXX,o.IMP,7},{"???",o.NOP,o.IMP,4},{"EOR",o.EOR,o.ABX,4},{"LSR",o.LSR,o.ABX,7},{"???",o.XXX,o.IMP,7},
-		{"RTS",o.RTS,o.IMP,6},{"ADC",o.ADC,o.IZX,6},{"???",o.XXX,o.IMP,2},{"???",o.XXX,o.IMP,8},{"???",o.NOP,o.IMP,3},{"ADC",o.ADC,o.ZP0,3},{"ROR",o.ROR,o.ZP0,5},{"???",o.XXX,o.IMP,5},{"PLA",o.PLA,o.IMP,4},{"ADC",o.ADC,o.IMM,2},{"ROR",o.ROR,o.IMP,2},{"???",o.XXX,o.IMP,2},{"JMP",o.JMP,o.IND,5},{"ADC",o.ADC,o.ABS,4},{"ROR",o.ROR,o.ABS,6},{"???",o.XXX,o.IMP,6},
-		{"BVS",o.BVS,o.REL,2},{"ADC",o.ADC,o.IZY,5},{"???",o.XXX,o.IMP,2},{"???",o.XXX,o.IMP,8},{"???",o.NOP,o.IMP,4},{"ADC",o.ADC,o.ZPX,4},{"ROR",o.ROR,o.ZPX,6},{"???",o.XXX,o.IMP,6},{"SEI",o.SEI,o.IMP,2},{"ADC",o.ADC,o.ABY,4},{"???",o.NOP,o.IMP,2},{"???",o.XXX,o.IMP,7},{"???",o.NOP,o.IMP,4},{"ADC",o.ADC,o.ABX,4},{"ROR",o.ROR,o.ABX,7},{"???",o.XXX,o.IMP,7},
-		{"???",o.NOP,o.IMP,2},{"STA",o.STA,o.IZX,6},{"???",o.NOP,o.IMP,2},{"???",o.XXX,o.IMP,6},{"STY",o.STY,o.ZP0,3},{"STA",o.STA,o.ZP0,3},{"STX",o.STX,o.ZP0,3},{"???",o.XXX,o.IMP,3},{"DEY",o.DEY,o.IMP,2},{"???",o.NOP,o.IMP,2},{"TXA",o.TXA,o.IMP,2},{"???",o.XXX,o.IMP,2},{"STY",o.STY,o.ABS,4},{"STA",o.STA,o.ABS,4},{"STX",o.STX,o.ABS,4},{"???",o.XXX,o.IMP,4},
-		{"BCC",o.BCC,o.REL,2},{"STA",o.STA,o.IZY,6},{"???",o.XXX,o.IMP,2},{"???",o.XXX,o.IMP,6},{"STY",o.STY,o.ZPX,4},{"STA",o.STA,o.ZPX,4},{"STX",o.STX,o.ZPY,4},{"???",o.XXX,o.IMP,4},{"TYA",o.TYA,o.IMP,2},{"STA",o.STA,o.ABY,5},{"TXS",o.TXS,o.IMP,2},{"???",o.XXX,o.IMP,5},{"???",o.NOP,o.IMP,5},{"STA",o.STA,o.ABX,5},{"???",o.XXX,o.IMP,5},{"???",o.XXX,o.IMP,5},
-		{"LDY",o.LDY,o.IMM,2},{"LDA",o.LDA,o.IZX,6},{"LDX",o.LDX,o.IMM,2},{"???",o.XXX,o.IMP,6},{"LDY",o.LDY,o.ZP0,3},{"LDA",o.LDA,o.ZP0,3},{"LDX",o.LDX,o.ZP0,3},{"???",o.XXX,o.IMP,3},{"TAY",o.TAY,o.IMP,2},{"LDA",o.LDA,o.IMM,2},{"TAX",o.TAX,o.IMP,2},{"???",o.XXX,o.IMP,2},{"LDY",o.LDY,o.ABS,4},{"LDA",o.LDA,o.ABS,4},{"LDX",o.LDX,o.ABS,4},{"???",o.XXX,o.IMP,4},
-		{"BCS",o.BCS,o.REL,2},{"LDA",o.LDA,o.IZY,5},{"???",o.XXX,o.IMP,2},{"???",o.XXX,o.IMP,5},{"LDY",o.LDY,o.ZPX,4},{"LDA",o.LDA,o.ZPX,4},{"LDX",o.LDX,o.ZPY,4},{"???",o.XXX,o.IMP,4},{"CLV",o.CLV,o.IMP,2},{"LDA",o.LDA,o.ABY,4},{"TSX",o.TSX,o.IMP,2},{"???",o.XXX,o.IMP,4},{"LDY",o.LDY,o.ABX,4},{"LDA",o.LDA,o.ABX,4},{"LDX",o.LDX,o.ABY,4},{"???",o.XXX,o.IMP,4},
-		{"CPY",o.CPY,o.IMM,2},{"CMP",o.CMP,o.IZX,6},{"???",o.NOP,o.IMP,2},{"???",o.XXX,o.IMP,8},{"CPY",o.CPY,o.ZP0,3},{"CMP",o.CMP,o.ZP0,3},{"DEC",o.DEC,o.ZP0,5},{"???",o.XXX,o.IMP,5},{"INY",o.INY,o.IMP,2},{"CMP",o.CMP,o.IMM,2},{"DEX",o.DEX,o.IMP,2},{"???",o.XXX,o.IMP,2},{"CPY",o.CPY,o.ABS,4},{"CMP",o.CMP,o.ABS,4},{"DEC",o.DEC,o.ABS,6},{"???",o.XXX,o.IMP,6},
-		{"BNE",o.BNE,o.REL,2},{"CMP",o.CMP,o.IZY,5},{"???",o.XXX,o.IMP,2},{"???",o.XXX,o.IMP,8},{"???",o.NOP,o.IMP,4},{"CMP",o.CMP,o.ZPX,4},{"DEC",o.DEC,o.ZPX,6},{"???",o.XXX,o.IMP,6},{"CLD",o.CLD,o.IMP,2},{"CMP",o.CMP,o.ABY,4},{"NOP",o.NOP,o.IMP,2},{"???",o.XXX,o.IMP,7},{"???",o.NOP,o.IMP,4},{"CMP",o.CMP,o.ABX,4},{"DEC",o.DEC,o.ABX,7},{"???",o.XXX,o.IMP,7},
-		{"CPX",o.CPX,o.IMM,2},{"SBC",o.SBC,o.IZX,6},{"???",o.NOP,o.IMP,2},{"???",o.XXX,o.IMP,8},{"CPX",o.CPX,o.ZP0,3},{"SBC",o.SBC,o.ZP0,3},{"INC",o.INC,o.ZP0,5},{"???",o.XXX,o.IMP,5},{"INX",o.INX,o.IMP,2},{"SBC",o.SBC,o.IMM,2},{"NOP",o.NOP,o.IMP,2},{"???",o.SBC,o.IMP,2},{"CPX",o.CPX,o.ABS,4},{"SBC",o.SBC,o.ABS,4},{"INC",o.INC,o.ABS,6},{"???",o.XXX,o.IMP,6},
-		{"BEQ",o.BEQ,o.REL,2},{"SBC",o.SBC,o.IZY,5},{"???",o.XXX,o.IMP,2},{"???",o.XXX,o.IMP,8},{"???",o.NOP,o.IMP,4},{"SBC",o.SBC,o.ZPX,4},{"INC",o.INC,o.ZPX,6},{"???",o.XXX,o.IMP,6},{"SED",o.SED,o.IMP,2},{"SBC",o.SBC,o.ABY,4},{"NOP",o.NOP,o.IMP,2},{"???",o.XXX,o.IMP,7},{"???",o.NOP,o.IMP,4},{"SBC",o.SBC,o.ABX,4},{"INC",o.INC,o.ABX,7},{"???",o.XXX,o.IMP,7},
-  }
 
   return o
 }
 
-func (o *Olc6502) Read(a uint16, bReadOnly ...bool) uint8 {
+func (o *Olc6502) read(a uint16, bReadOnly ...bool) uint8 {
   if (a >= 0x0000 && a <= 0xFFFF) {
     return o.ram[a]
   }
   return 0x00
 }
 
-func (o *Olc6502) Write(a uint16, d uint8) {
+func (o *Olc6502) write(a uint16, d uint8) {
   if (a >= 0x0000 && a <= 0xFFFF){
     o.ram[a] = d
   }
 }
 
 func (o *Olc6502) GetFlag(f string) uint8 {
-  if (o.Status & o.FLAGS6502[f]) > 0 {
+  if (o.Status & Flags6502[f]) > 0 {
     return 1
   } else {
     return 0
@@ -101,9 +106,9 @@ func (o *Olc6502) GetFlag(f string) uint8 {
 
 func (o *Olc6502) SetFlag(f string, v bool) {
   if v {
-    o.Status |= o.FLAGS6502[f]
+    o.Status |= Flags6502[f]
   } else {
-    o.Status &= ^o.FLAGS6502[f]
+    o.Status &= ^Flags6502[f]
   } 
 }
 
@@ -115,15 +120,15 @@ func (o *Olc6502) Complete() bool {
 
 func (o *Olc6502) Clock() {
   if (o.Cycles == 0) {
-    o.opcode = o.Read(o.Pc)
+    o.opcode = o.read(o.Pc)
     o.SetFlag("U", true)
     o.Pc++
 
     // Get starting number of cycles
-    o.Cycles = o.lookup[o.opcode].cycles
+    o.Cycles = lookup[o.opcode].cycles
 
-    additional_cycle1 := o.lookup[o.opcode].addrmode(o)
-    additional_cycle2 := o.lookup[o.opcode].operate(o)  
+    additional_cycle1 := lookup[o.opcode].addrmode(o)
+    additional_cycle2 := lookup[o.opcode].operate(o)  
 
     o.Cycles += (additional_cycle1 & additional_cycle2)
   }
@@ -135,11 +140,11 @@ func (o *Olc6502) Reset() {
   o.X = 0 
   o.Y = 0
   o.Stkp = 0xFD
-  o.Status = 0x00 | o.FLAGS6502["U"]
+  o.Status = 0x00 | Flags6502["U"]
 
   o.addr_abs = 0xFFFC
-  lo := uint16(o.Read(o.addr_abs + 0))
-  hi := uint16(o.Read(o.addr_abs + 1))
+  lo := uint16(o.read(o.addr_abs + 0))
+  hi := uint16(o.read(o.addr_abs + 1))
 
   o.Pc = (hi << 8) | lo
 
@@ -151,40 +156,40 @@ func (o *Olc6502) Reset() {
 }
 func (o *Olc6502) Irq() {
   if o.GetFlag("T") == 0 {
-    o.Write(0x0100 + uint16(o.Stkp), uint8((o.Pc >> 8) & 0x00FF))
+    o.write(0x0100 + uint16(o.Stkp), uint8((o.Pc >> 8) & 0x00FF))
     o.Stkp--
-    o.Write(0x0100 + uint16(o.Stkp), uint8(o.Pc >> 8 & 0x00FF))
+    o.write(0x0100 + uint16(o.Stkp), uint8(o.Pc >> 8 & 0x00FF))
     o.Stkp--
 
     o.SetFlag("B", false)
     o.SetFlag("U", true)
     o.SetFlag("I", true)
-    o.Write(0x0100 + uint16(o.Stkp), o.Status)
+    o.write(0x0100 + uint16(o.Stkp), o.Status)
     o.Stkp--
 
     o.addr_abs = 0xFFFE
-    lo := uint16(o.Read(o.addr_abs + 0))
-    hi := uint16(o.Read(o.addr_abs + 1))
+    lo := uint16(o.read(o.addr_abs + 0))
+    hi := uint16(o.read(o.addr_abs + 1))
     o.Pc = (hi << 8) | lo
 
     o.Cycles = 7
   }
 }
 func (o *Olc6502) Nmi() {
-    o.Write(0x0100 + uint16(o.Stkp), uint8(o.Pc >> 8 & 0x00FF))
+    o.write(0x0100 + uint16(o.Stkp), uint8(o.Pc >> 8 & 0x00FF))
     o.Stkp--
-    o.Write(0x0100 + uint16(o.Stkp), uint8(o.Pc >> 8 & 0x00FF))
+    o.write(0x0100 + uint16(o.Stkp), uint8(o.Pc >> 8 & 0x00FF))
     o.Stkp--
 
     o.SetFlag("B", false)
     o.SetFlag("U", true)
     o.SetFlag("I", true)
-    o.Write(0x0100 + uint16(o.Stkp), o.Status)
+    o.write(0x0100 + uint16(o.Stkp), o.Status)
     o.Stkp--
 
     o.addr_abs = 0xFFFA
-    lo := uint16(o.Read(o.addr_abs + 0))
-    hi := uint16(o.Read(o.addr_abs + 1))
+    lo := uint16(o.read(o.addr_abs + 0))
+    hi := uint16(o.read(o.addr_abs + 1))
     o.Pc = (hi << 8) | lo
 
     o.Cycles = 8
@@ -192,8 +197,8 @@ func (o *Olc6502) Nmi() {
 
 // Fetching data
 func (o *Olc6502) fetch() uint8 {
-  if (reflect.ValueOf(o.lookup[o.opcode].addrmode).Pointer() != reflect.ValueOf(o.IMP).Pointer()) {
-    o.fetched = o.Read(o.addr_abs)
+  if (reflect.ValueOf(lookup[o.opcode].addrmode).Pointer() != reflect.ValueOf(IMP).Pointer()) {
+    o.fetched = o.read(o.addr_abs)
   }
   return o.fetched
 }
@@ -211,64 +216,64 @@ func (o *Olc6502) Disassemble(nStart uint16, nStop uint16) map[uint16] string {
     sInst := "$" + helpers.Hex(addr, 4) + ": "
 
     // Read the instruction
-    opcode := uint8(o.Read(uint16(addr), true))
+    opcode := uint8(o.read(uint16(addr), true))
     addr++
-    sInst += o.lookup[opcode].name + " "
+    sInst += lookup[opcode].name + " "
 
-    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.IMP) {
+    if helpers.FindFunc(lookup[opcode].addrmode) == helpers.FindFunc(IMP) {
       sInst += " {IMP}"
     } 
-    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.IMM) {
-      value = o.Read(uint16(addr), true); addr++
+    if helpers.FindFunc(lookup[opcode].addrmode) == helpers.FindFunc(IMM) {
+      value = o.read(uint16(addr), true); addr++
       sInst += "#$" + helpers.Hex(value, 2) + " {IMM}"
     }
-    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.ZP0) {
-      lo = o.Read(uint16(addr), true); addr++
+    if helpers.FindFunc(lookup[opcode].addrmode) == helpers.FindFunc(ZP0) {
+      lo = o.read(uint16(addr), true); addr++
       hi = 0x00
       sInst += "$" + helpers.Hex(lo, 2) + " {ZP0}"
     }
-    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.ZPX) {
-      lo = o.Read(uint16(addr), true); addr++
+    if helpers.FindFunc(lookup[opcode].addrmode) == helpers.FindFunc(ZPX) {
+      lo = o.read(uint16(addr), true); addr++
       hi = 0x00
       sInst += "$" + helpers.Hex(lo, 2) + ", X {ZPX}"
     }
-    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.ZPY) {
-      lo = o.Read(uint16(addr), true); addr++
+    if helpers.FindFunc(lookup[opcode].addrmode) == helpers.FindFunc(ZPY) {
+      lo = o.read(uint16(addr), true); addr++
       hi = 0x00
       sInst += "$" + helpers.Hex(lo, 2) + ", Y {ZPY}"
     }
-    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.IZX) {
-      lo = o.Read(uint16(addr), true); addr++
+    if helpers.FindFunc(lookup[opcode].addrmode) == helpers.FindFunc(IZX) {
+      lo = o.read(uint16(addr), true); addr++
       hi = 0x00
       sInst += "($" + helpers.Hex(lo, 2) + ", X) {IZX}"
     }
-    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.IZY) {
-      lo = o.Read(uint16(addr), true); addr++
+    if helpers.FindFunc(lookup[opcode].addrmode) == helpers.FindFunc(IZY) {
+      lo = o.read(uint16(addr), true); addr++
       hi = 0x00
       sInst += "($" + helpers.Hex(lo, 2) + ", Y) {IZY}"
     }
-    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.ABS) {
-      lo = o.Read(uint16(addr), true); addr++
-      hi = o.Read(uint16(addr), true); addr++
+    if helpers.FindFunc(lookup[opcode].addrmode) == helpers.FindFunc(ABS) {
+      lo = o.read(uint16(addr), true); addr++
+      hi = o.read(uint16(addr), true); addr++
       sInst += "$" + helpers.Hex(((hi << 8) | lo), 4) + " {ABS}"
     }
-    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.ABX) {
-      lo = o.Read(uint16(addr), true); addr++
-      hi = o.Read(uint16(addr), true); addr++
+    if helpers.FindFunc(lookup[opcode].addrmode) == helpers.FindFunc(ABX) {
+      lo = o.read(uint16(addr), true); addr++
+      hi = o.read(uint16(addr), true); addr++
       sInst += "$" + helpers.Hex(((hi << 8) | lo), 4) + ", X {ABX}"
     }
-    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.ABY) {
-      lo = o.Read(uint16(addr), true); addr++
-      hi = o.Read(uint16(addr), true); addr++
+    if helpers.FindFunc(lookup[opcode].addrmode) == helpers.FindFunc(ABY) {
+      lo = o.read(uint16(addr), true); addr++
+      hi = o.read(uint16(addr), true); addr++
       sInst += "$" + helpers.Hex(((hi << 8) | lo), 4) + ", Y {ABY}"
     }
-    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.IND) {
-      lo = o.Read(uint16(addr), true); addr++
-      hi = o.Read(uint16(addr), true); addr++
+    if helpers.FindFunc(lookup[opcode].addrmode) == helpers.FindFunc(IND) {
+      lo = o.read(uint16(addr), true); addr++
+      hi = o.read(uint16(addr), true); addr++
       sInst += "($" + helpers.Hex(((hi << 8) | lo), 4) + ") {IND}"
     }
-    if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.REL) {
-      value = o.Read(uint16(addr), true); addr++
+    if helpers.FindFunc(lookup[opcode].addrmode) == helpers.FindFunc(REL) {
+      value = o.read(uint16(addr), true); addr++
       sInst += "$" + helpers.Hex(value, 2) + " [$" + helpers.Hex(uint8(addr) + value, 4) + "] {REL}"
     }
 
