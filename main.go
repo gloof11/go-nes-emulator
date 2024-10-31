@@ -66,19 +66,19 @@ func init() {
     }
 
     // fmt.Printf("Loading %s into memory at byte %x\n", hexPair, nOffset)
-    nes.ram[nOffset] = uint8(data) // Convert to uint8 and store in memory
-    // fmt.Printf("%s loaded into memory as %x\n", hexPair, nes.ram[nOffset])
+    nes.Ram[nOffset] = uint8(data) // Convert to uint8 and store in memory
+    // fmt.Printf("%s loaded into memory as %x\n", hexPair, nes.Ram[nOffset])
 
     nOffset++
   }
 
   log.Println("Set the reset vector")
-  nes.ram[0xFFFC] = 0x00
-  nes.ram[0xFFFD] = 0x80
+  nes.Ram[0xFFFC] = 0x00
+  nes.Ram[0xFFFD] = 0x80
 
-  mapAsm = nes.cpu.disassemble(0x0000, 0xFFFF)
+  mapAsm = nes.Cpu.Disassemble(0x0000, 0xFFFF)
 
-  nes.cpu.reset()
+  nes.Cpu.Reset()
 }
 
 func DrawRam(screen *ebiten.Image, x float64, y float64, nAddr uint16, nRows int, nColumns int) {
@@ -86,7 +86,7 @@ func DrawRam(screen *ebiten.Image, x float64, y float64, nAddr uint16, nRows int
   for row := 0; row < nRows; row ++ {
     sOffset := "$" + hex(nAddr, 4) + ":"
     for col := 0; col < nColumns; col++ {
-      sOffset += " " + hex(nes.read(nAddr, true), 2)
+      sOffset += " " + hex(nes.Read(nAddr, true), 2)
       nAddr += 1
     }
     {
@@ -113,7 +113,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x + 64, y)
-    if nes.cpu.status & nes.cpu.FLAGS6502["N"] == nes.cpu.FLAGS6502["N"] {
+    if nes.Cpu.Status & nes.Cpu.FLAGS6502["N"] == nes.Cpu.FLAGS6502["N"] {
       op.ColorScale.ScaleWithColor(color.RGBA{0, 255, 0, 0})
     } else {
       op.ColorScale.ScaleWithColor(color.RGBA{255, 0, 0, 0})
@@ -125,7 +125,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x + 80, y)
-    if nes.cpu.status & nes.cpu.FLAGS6502["V"] == nes.cpu.FLAGS6502["V"] {
+    if nes.Cpu.Status & nes.Cpu.FLAGS6502["V"] == nes.Cpu.FLAGS6502["V"] {
       op.ColorScale.ScaleWithColor(color.RGBA{0, 255, 0, 0})
     } else {
       op.ColorScale.ScaleWithColor(color.RGBA{255, 0, 0, 0})
@@ -137,7 +137,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x + 96, y)
-    if nes.cpu.status & nes.cpu.FLAGS6502["U"] == nes.cpu.FLAGS6502["U"] {
+    if nes.Cpu.Status & nes.Cpu.FLAGS6502["U"] == nes.Cpu.FLAGS6502["U"] {
       op.ColorScale.ScaleWithColor(color.RGBA{0, 255, 0, 0})
     } else {
       op.ColorScale.ScaleWithColor(color.RGBA{255, 0, 0, 0})
@@ -149,7 +149,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x + 112, y)
-    if nes.cpu.status & nes.cpu.FLAGS6502["B"] == nes.cpu.FLAGS6502["B"] {
+    if nes.Cpu.Status & nes.Cpu.FLAGS6502["B"] == nes.Cpu.FLAGS6502["B"] {
       op.ColorScale.ScaleWithColor(color.RGBA{0, 255, 0, 0})
     } else {
       op.ColorScale.ScaleWithColor(color.RGBA{255, 0, 0, 0})
@@ -161,7 +161,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x + 128, y)
-    if nes.cpu.status & nes.cpu.FLAGS6502["D"] == nes.cpu.FLAGS6502["D"] {
+    if nes.Cpu.Status & nes.Cpu.FLAGS6502["D"] == nes.Cpu.FLAGS6502["D"] {
       op.ColorScale.ScaleWithColor(color.RGBA{0, 255, 0, 0})
     } else {
       op.ColorScale.ScaleWithColor(color.RGBA{255, 0, 0, 0})
@@ -173,7 +173,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x + 144, y)
-    if nes.cpu.status & nes.cpu.FLAGS6502["I"] == nes.cpu.FLAGS6502["I"] {
+    if nes.Cpu.Status & nes.Cpu.FLAGS6502["I"] == nes.Cpu.FLAGS6502["I"] {
       op.ColorScale.ScaleWithColor(color.RGBA{0, 255, 0, 0})
     } else {
       op.ColorScale.ScaleWithColor(color.RGBA{255, 0, 0, 0})
@@ -185,7 +185,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x + 160, y)
-    if nes.cpu.status & nes.cpu.FLAGS6502["Z"] == nes.cpu.FLAGS6502["Z"] {
+    if nes.Cpu.Status & nes.Cpu.FLAGS6502["Z"] == nes.Cpu.FLAGS6502["Z"] {
       op.ColorScale.ScaleWithColor(color.RGBA{0, 255, 0, 0})
     } else {
       op.ColorScale.ScaleWithColor(color.RGBA{255, 0, 0, 0})
@@ -197,7 +197,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x + 178, y)
-    if nes.cpu.status & nes.cpu.FLAGS6502["C"] == nes.cpu.FLAGS6502["C"] {
+    if nes.Cpu.Status & nes.Cpu.FLAGS6502["C"] == nes.Cpu.FLAGS6502["C"] {
       op.ColorScale.ScaleWithColor(color.RGBA{0, 255, 0, 0})
     } else {
       op.ColorScale.ScaleWithColor(color.RGBA{255, 0, 0, 0})
@@ -205,7 +205,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
     op.LineSpacing = mplusNormalFace.Size
     text.Draw(screen, drawnString, mplusNormalFace, op)
   }
-  drawnString = "PC: $" + hex(nes.cpu.pc, 4)
+  drawnString = "PC: $" + hex(nes.Cpu.Pc, 4)
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x, y + 10 * 2)
@@ -213,7 +213,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
     op.ColorScale.ScaleWithColor(color.White)
     text.Draw(screen, drawnString, mplusNormalFace, op)
   }
-  drawnString = "A: $" + hex(nes.cpu.a, 2)
+  drawnString = "A: $" + hex(nes.Cpu.A, 2)
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x, y + 20 * 2)
@@ -221,7 +221,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
     op.ColorScale.ScaleWithColor(color.White)
     text.Draw(screen, drawnString, mplusNormalFace, op)
   }
-  drawnString = "X: $" + hex(nes.cpu.x, 2)
+  drawnString = "X: $" + hex(nes.Cpu.X, 2)
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x, y + 30 * 2)
@@ -229,7 +229,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
     op.ColorScale.ScaleWithColor(color.White)
     text.Draw(screen, drawnString, mplusNormalFace, op)
   }
-  drawnString = "Y: $" + hex(nes.cpu.y, 2)
+  drawnString = "Y: $" + hex(nes.Cpu.Y, 2)
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x, y + 40 * 2)
@@ -237,7 +237,7 @@ func DrawCpu(screen *ebiten.Image, x float64, y float64) {
     op.ColorScale.ScaleWithColor(color.White)
     text.Draw(screen, drawnString, mplusNormalFace, op)
   }
-  drawnString = "Stack P: $" + hex(nes.cpu.stkp, 4)
+  drawnString = "Stack P: $" + hex(nes.Cpu.Stkp, 4)
   {
     op := &text.DrawOptions{}
     op.GeoM.Translate(x, y + 50 * 2)
@@ -251,7 +251,7 @@ func DrawCode(screen *ebiten.Image, x float64, y float64, nLines int) {
   var nLineY int = (nLines >> 1) * 10 + int(y)
 
 //  for i := nLines; i >= 0; i-- {
-//    line, ok := mapAsm[nes.cpu.pc-uint16(i)]
+//    line, ok := mapAsm[nes.Cpu.Pc-uint16(i)]
 //    if ok {
 //      {
 //        op := &text.DrawOptions{}
@@ -265,9 +265,9 @@ func DrawCode(screen *ebiten.Image, x float64, y float64, nLines int) {
 //  }
 
   for i := 0; i < nLines; i++ {
-    line, ok := mapAsm[nes.cpu.pc+uint16(i)]
+    line, ok := mapAsm[nes.Cpu.Pc+uint16(i)]
     if ok {
-      if (nes.cpu.pc+uint16(i)) != nes.cpu.pc {
+      if (nes.Cpu.Pc+uint16(i)) != nes.Cpu.Pc {
         {
           op := &text.DrawOptions{}
           op.GeoM.Translate(x, float64(nLineY))
@@ -295,22 +295,22 @@ type Game struct{}
 func (g *Game) Update() error {
   if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
     for {
-      nes.cpu.clock()
-      //fmt.Println(hex(nes.cpu.pc, 4))
-      if nes.cpu.complete() {
+      nes.Cpu.Clock()
+      //fmt.Println(hex(nes.Cpu.Pc, 4))
+      if nes.Cpu.Complete() {
         break
       }
     }
   }
 
   if inpututil.IsKeyJustPressed(ebiten.KeyR) {
-    nes.cpu.reset()
+    nes.Cpu.Reset()
   }
   if inpututil.IsKeyJustPressed(ebiten.KeyI) {
-    nes.cpu.irq()
+    nes.Cpu.Irq()
   }
   if inpututil.IsKeyJustPressed(ebiten.KeyN) {
-    nes.cpu.nmi()
+    nes.Cpu.Nmi()
   }
 
   return nil
@@ -340,7 +340,7 @@ func main() {
   ebiten.SetWindowSize(windowWidth, windowHeight)
   ebiten.SetWindowTitle("6502 Demonstration")
 
-  nes.cpu.cycles = 0x00
+  nes.Cpu.Cycles = 0x00
 
   if err := ebiten.RunGame(&Game{}); err != nil { 
     log.Fatal(err)

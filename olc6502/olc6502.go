@@ -8,17 +8,17 @@ import (
 type Olc6502 struct {
   ram *[64*1024]uint8
   FLAGS6502 map[string] uint8
-  a uint8 
-  x uint8
-  y uint8
-  stkp uint8
-  pc uint16
-  status uint8
+  A uint8 
+  X uint8
+  Y uint8
+  Stkp uint8
+  Pc uint16
+  Status uint8
   fetched uint8
   addr_abs uint16
   addr_rel uint16
   opcode uint8
-  cycles uint8
+  Cycles uint8
   lookup []Instruction
 }
 
@@ -44,17 +44,17 @@ func NewOlc6502(ram *[64*1024]uint8) *Olc6502 {
     "N": 1 << 7, // 128
   }
   
-  o.a = 0x00
-  o.x = 0x00
-  o.y = 0x00
-  o.stkp = 0x00
-  o.pc = 0x0000
-  o.status = 0x00
+  o.A = 0x00
+  o.X = 0x00
+  o.Y = 0x00
+  o.Stkp = 0x00
+  o.Pc = 0x0000
+  o.Status = 0x00
   o.fetched = 0x00
   o.addr_abs = 0x000
   o.addr_rel = 0x00
   o.opcode = 0x00
-  o.cycles = 0
+  o.Cycles = 0
 
   o.lookup = []Instruction{
     {"BRK",o.BRK,o.IMM,7},{"ORA",o.ORA,o.IZX,6},{"???",o.XXX,o.IMP,2},{"???",o.XXX,o.IMP,8},{"???",o.NOP,o.IMP,3},{"ORA",o.ORA,o.ZP0,3},{"ASL",o.ASL,o.ZP0,5},{"???",o.XXX,o.IMP,5},{"PHP",o.PHP,o.IMP,3},{"ORA",o.ORA,o.IMM,2},{"ASL",o.ASL,o.IMP,2},{"???",o.XXX,o.IMP,2},{"???",o.NOP,o.IMP,4},{"ORA",o.ORA,o.ABS,4},{"ASL",o.ASL,o.ABS,6},{"???",o.XXX,o.IMP,6},
@@ -78,21 +78,21 @@ func NewOlc6502(ram *[64*1024]uint8) *Olc6502 {
   return o
 }
 
-func (o *Olc6502) read(a uint16, bReadOnly ...bool) uint8 {
+func (o *Olc6502) Read(a uint16, bReadOnly ...bool) uint8 {
   if (a >= 0x0000 && a <= 0xFFFF) {
     return o.ram[a]
   }
   return 0x00
 }
 
-func (o *Olc6502) write(a uint16, d uint8) {
+func (o *Olc6502) Write(a uint16, d uint8) {
   if (a >= 0x0000 && a <= 0xFFFF){
     o.ram[a] = d
   }
 }
 
 func (o *Olc6502) GetFlag(f string) uint8 {
-  if (o.status & o.FLAGS6502[f]) > 0 {
+  if (o.Status & o.FLAGS6502[f]) > 0 {
     return 1
   } else {
     return 0
@@ -101,104 +101,104 @@ func (o *Olc6502) GetFlag(f string) uint8 {
 
 func (o *Olc6502) SetFlag(f string, v bool) {
   if v {
-    o.status |= o.FLAGS6502[f]
+    o.Status |= o.FLAGS6502[f]
   } else {
-    o.status &= ^o.FLAGS6502[f]
+    o.Status &= ^o.FLAGS6502[f]
   } 
 }
 
 // Necessary functions
-func (o *Olc6502) complete() bool {
-  return o.cycles == 0
+func (o *Olc6502) Complete() bool {
+  return o.Cycles == 0
 }
 
 
-func (o *Olc6502) clock() {
-  if (o.cycles == 0) {
-    o.opcode = o.read(o.pc)
+func (o *Olc6502) Clock() {
+  if (o.Cycles == 0) {
+    o.opcode = o.Read(o.Pc)
     o.SetFlag("U", true)
-    o.pc++
+    o.Pc++
 
     // Get starting number of cycles
-    o.cycles = o.lookup[o.opcode].cycles
+    o.Cycles = o.lookup[o.opcode].cycles
 
     additional_cycle1 := o.lookup[o.opcode].addrmode(o)
     additional_cycle2 := o.lookup[o.opcode].operate(o)  
 
-    o.cycles += (additional_cycle1 & additional_cycle2)
+    o.Cycles += (additional_cycle1 & additional_cycle2)
   }
 
-  o.cycles--
+  o.Cycles--
 }
-func (o *Olc6502) reset() {
-  o.a = 0
-  o.x = 0 
-  o.y = 0
-  o.stkp = 0xFD
-  o.status = 0x00 | o.FLAGS6502["U"]
+func (o *Olc6502) Reset() {
+  o.A = 0
+  o.X = 0 
+  o.Y = 0
+  o.Stkp = 0xFD
+  o.Status = 0x00 | o.FLAGS6502["U"]
 
   o.addr_abs = 0xFFFC
-  lo := uint16(o.read(o.addr_abs + 0))
-  hi := uint16(o.read(o.addr_abs + 1))
+  lo := uint16(o.Read(o.addr_abs + 0))
+  hi := uint16(o.Read(o.addr_abs + 1))
 
-  o.pc = (hi << 8) | lo
+  o.Pc = (hi << 8) | lo
 
   o.addr_rel = 0x0000
   o.addr_abs = 0x0000
   o.fetched = 0x00
 
-  o.cycles = 8
+  o.Cycles = 8
 }
-func (o *Olc6502) irq() {
+func (o *Olc6502) Irq() {
   if o.GetFlag("T") == 0 {
-    o.write(0x0100 + uint16(o.stkp), uint8((o.pc >> 8) & 0x00FF))
-    o.stkp--
-    o.write(0x0100 + uint16(o.stkp), uint8(o.pc >> 8 & 0x00FF))
-    o.stkp--
+    o.Write(0x0100 + uint16(o.Stkp), uint8((o.Pc >> 8) & 0x00FF))
+    o.Stkp--
+    o.Write(0x0100 + uint16(o.Stkp), uint8(o.Pc >> 8 & 0x00FF))
+    o.Stkp--
 
     o.SetFlag("B", false)
     o.SetFlag("U", true)
     o.SetFlag("I", true)
-    o.write(0x0100 + uint16(o.stkp), o.status)
-    o.stkp--
+    o.Write(0x0100 + uint16(o.Stkp), o.Status)
+    o.Stkp--
 
     o.addr_abs = 0xFFFE
-    lo := uint16(o.read(o.addr_abs + 0))
-    hi := uint16(o.read(o.addr_abs + 1))
-    o.pc = (hi << 8) | lo
+    lo := uint16(o.Read(o.addr_abs + 0))
+    hi := uint16(o.Read(o.addr_abs + 1))
+    o.Pc = (hi << 8) | lo
 
-    o.cycles = 7
+    o.Cycles = 7
   }
 }
-func (o *Olc6502) nmi() {
-    o.write(0x0100 + uint16(o.stkp), uint8(o.pc >> 8 & 0x00FF))
-    o.stkp--
-    o.write(0x0100 + uint16(o.stkp), uint8(o.pc >> 8 & 0x00FF))
-    o.stkp--
+func (o *Olc6502) Nmi() {
+    o.Write(0x0100 + uint16(o.Stkp), uint8(o.Pc >> 8 & 0x00FF))
+    o.Stkp--
+    o.Write(0x0100 + uint16(o.Stkp), uint8(o.Pc >> 8 & 0x00FF))
+    o.Stkp--
 
     o.SetFlag("B", false)
     o.SetFlag("U", true)
     o.SetFlag("I", true)
-    o.write(0x0100 + uint16(o.stkp), o.status)
-    o.stkp--
+    o.Write(0x0100 + uint16(o.Stkp), o.Status)
+    o.Stkp--
 
     o.addr_abs = 0xFFFA
-    lo := uint16(o.read(o.addr_abs + 0))
-    hi := uint16(o.read(o.addr_abs + 1))
-    o.pc = (hi << 8) | lo
+    lo := uint16(o.Read(o.addr_abs + 0))
+    hi := uint16(o.Read(o.addr_abs + 1))
+    o.Pc = (hi << 8) | lo
 
-    o.cycles = 8
+    o.Cycles = 8
 }
 
 // Fetching data
 func (o *Olc6502) fetch() uint8 {
   if (reflect.ValueOf(o.lookup[o.opcode].addrmode).Pointer() != reflect.ValueOf(o.IMP).Pointer()) {
-    o.fetched = o.read(o.addr_abs)
+    o.fetched = o.Read(o.addr_abs)
   }
   return o.fetched
 }
 
-func (o *Olc6502) disassemble(nStart uint16, nStop uint16) map[uint16] string {
+func (o *Olc6502) Disassemble(nStart uint16, nStop uint16) map[uint16] string {
   addr := uint32(nStart)
   var value, lo, hi uint8 = 0x00, 0x00, 0x00
   var mapLines = make(map[uint16]string)
@@ -211,7 +211,7 @@ func (o *Olc6502) disassemble(nStart uint16, nStop uint16) map[uint16] string {
     sInst := "$" + helpers.Hex(addr, 4) + ": "
 
     // Read the instruction
-    opcode := uint8(o.read(uint16(addr), true))
+    opcode := uint8(o.Read(uint16(addr), true))
     addr++
     sInst += o.lookup[opcode].name + " "
 
@@ -219,56 +219,56 @@ func (o *Olc6502) disassemble(nStart uint16, nStop uint16) map[uint16] string {
       sInst += " {IMP}"
     } 
     if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.IMM) {
-      value = o.read(uint16(addr), true); addr++
+      value = o.Read(uint16(addr), true); addr++
       sInst += "#$" + helpers.Hex(value, 2) + " {IMM}"
     }
     if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.ZP0) {
-      lo = o.read(uint16(addr), true); addr++
+      lo = o.Read(uint16(addr), true); addr++
       hi = 0x00
       sInst += "$" + helpers.Hex(lo, 2) + " {ZP0}"
     }
     if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.ZPX) {
-      lo = o.read(uint16(addr), true); addr++
+      lo = o.Read(uint16(addr), true); addr++
       hi = 0x00
       sInst += "$" + helpers.Hex(lo, 2) + ", X {ZPX}"
     }
     if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.ZPY) {
-      lo = o.read(uint16(addr), true); addr++
+      lo = o.Read(uint16(addr), true); addr++
       hi = 0x00
       sInst += "$" + helpers.Hex(lo, 2) + ", Y {ZPY}"
     }
     if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.IZX) {
-      lo = o.read(uint16(addr), true); addr++
+      lo = o.Read(uint16(addr), true); addr++
       hi = 0x00
       sInst += "($" + helpers.Hex(lo, 2) + ", X) {IZX}"
     }
     if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.IZY) {
-      lo = o.read(uint16(addr), true); addr++
+      lo = o.Read(uint16(addr), true); addr++
       hi = 0x00
       sInst += "($" + helpers.Hex(lo, 2) + ", Y) {IZY}"
     }
     if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.ABS) {
-      lo = o.read(uint16(addr), true); addr++
-      hi = o.read(uint16(addr), true); addr++
+      lo = o.Read(uint16(addr), true); addr++
+      hi = o.Read(uint16(addr), true); addr++
       sInst += "$" + helpers.Hex(((hi << 8) | lo), 4) + " {ABS}"
     }
     if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.ABX) {
-      lo = o.read(uint16(addr), true); addr++
-      hi = o.read(uint16(addr), true); addr++
+      lo = o.Read(uint16(addr), true); addr++
+      hi = o.Read(uint16(addr), true); addr++
       sInst += "$" + helpers.Hex(((hi << 8) | lo), 4) + ", X {ABX}"
     }
     if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.ABY) {
-      lo = o.read(uint16(addr), true); addr++
-      hi = o.read(uint16(addr), true); addr++
+      lo = o.Read(uint16(addr), true); addr++
+      hi = o.Read(uint16(addr), true); addr++
       sInst += "$" + helpers.Hex(((hi << 8) | lo), 4) + ", Y {ABY}"
     }
     if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.IND) {
-      lo = o.read(uint16(addr), true); addr++
-      hi = o.read(uint16(addr), true); addr++
+      lo = o.Read(uint16(addr), true); addr++
+      hi = o.Read(uint16(addr), true); addr++
       sInst += "($" + helpers.Hex(((hi << 8) | lo), 4) + ") {IND}"
     }
     if helpers.FindFunc(o.lookup[opcode].addrmode) == helpers.FindFunc(o.REL) {
-      value = o.read(uint16(addr), true); addr++
+      value = o.Read(uint16(addr), true); addr++
       sInst += "$" + helpers.Hex(value, 2) + " [$" + helpers.Hex(uint8(addr) + value, 4) + "] {REL}"
     }
 

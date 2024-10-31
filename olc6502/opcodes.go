@@ -7,20 +7,20 @@ import (
 // Opcodes
 func (cpu *Olc6502) ADC(o *Olc6502) uint8 {
   o.fetch()
-  temp := uint16(o.a + o.fetched + o.GetFlag("C"))
+  temp := uint16(o.A + o.fetched + o.GetFlag("C"))
   o.SetFlag("C", temp > 255)
   o.SetFlag("Z", temp & 0x00FF == 0)
   o.SetFlag("Z", temp & 0x80 != 0)
-  o.SetFlag("V", (uint16(o.a) ^ uint16(o.fetched)) & (uint16(o.a) ^ temp) & 0x0080 != 0)
-  o.a = uint8(temp & 0x00FF)
+  o.SetFlag("V", (uint16(o.A) ^ uint16(o.fetched)) & (uint16(o.A) ^ temp) & 0x0080 != 0)
+  o.A = uint8(temp & 0x00FF)
 
   return 1
 }
 func (cpu *Olc6502) AND(o *Olc6502) uint8 {
   o.fetch()
-  o.a = o.a & o.fetched
-  o.SetFlag("Z", o.a == 0x00)
-  o.SetFlag("N", (o.a & 0x80) != 0)
+  o.A = o.A & o.fetched
+  o.SetFlag("Z", o.A == 0x00)
+  o.SetFlag("N", (o.A & 0x80) != 0)
 
   return 1
 }
@@ -32,7 +32,7 @@ func (cpu *Olc6502) ASL(o *Olc6502) uint8 {
   o.SetFlag("N", temp & 0x80 != 0)
 
   if helpers.FindFunc(o.lookup[o.opcode].addrmode) == helpers.FindFunc(o.IMP) {
-    o.a = uint8(temp & 0x00FF)
+    o.A = uint8(temp & 0x00FF)
   } else {
     o.write(o.addr_abs, uint8(temp & 0x00FF))
   }
@@ -41,49 +41,49 @@ func (cpu *Olc6502) ASL(o *Olc6502) uint8 {
 }
 func (cpu *Olc6502) BCC(o *Olc6502) uint8 {
     if o.GetFlag("C") == 0 {
-    o.cycles++
-    o.addr_abs = o.pc + o.addr_rel
+    o.Cycles++
+    o.addr_abs = o.Pc + o.addr_rel
 
-    if (o.addr_abs & 0xFF00) != (o.pc & 0xFF00) {
-      o.cycles++
+    if (o.addr_abs & 0xFF00) != (o.Pc & 0xFF00) {
+      o.Cycles++
     }
 
-    o.pc = o.addr_abs
+    o.Pc = o.addr_abs
   }
 
   return 0
 }
 func (cpu *Olc6502) BCS(o *Olc6502) uint8 {
   if o.GetFlag("C") == 1 {
-    o.cycles++
-    o.addr_abs = o.pc + o.addr_rel
+    o.Cycles++
+    o.addr_abs = o.Pc + o.addr_rel
 
-    if (o.addr_abs & 0xFF00) != (o.pc & 0xFF00) {
-      o.cycles++
+    if (o.addr_abs & 0xFF00) != (o.Pc & 0xFF00) {
+      o.Cycles++
     }
 
-    o.pc = o.addr_abs
+    o.Pc = o.addr_abs
   }
 
   return 0
 }
 func (cpu *Olc6502) BEQ(o *Olc6502) uint8 {
     if o.GetFlag("Z") == 1 {
-    o.cycles++
-    o.addr_abs = o.pc + o.addr_rel
+    o.Cycles++
+    o.addr_abs = o.Pc + o.addr_rel
 
-    if (o.addr_abs & 0xFF00) != (o.pc & 0xFF00) {
-      o.cycles++
+    if (o.addr_abs & 0xFF00) != (o.Pc & 0xFF00) {
+      o.Cycles++
     }
 
-    o.pc = o.addr_abs
+    o.Pc = o.addr_abs
   }
 
   return 0
 }
 func (cpu *Olc6502) BIT(o *Olc6502) uint8 {
   o.fetch()
-  temp := o.a & o.fetched
+  temp := o.A & o.fetched
   o.SetFlag("Z", temp & 0x00FF == 0x00)
   o.SetFlag("N", o.fetched & (1 << 7) != 0)
   o.SetFlag("V", o.fetched & (1 << 6) != 0)
@@ -91,87 +91,87 @@ func (cpu *Olc6502) BIT(o *Olc6502) uint8 {
 }
 func (cpu *Olc6502) BMI(o *Olc6502) uint8 {
     if o.GetFlag("N") == 1 {
-    o.cycles++
-    o.addr_abs = o.pc + o.addr_rel
+    o.Cycles++
+    o.addr_abs = o.Pc + o.addr_rel
 
-    if (o.addr_abs & 0xFF00) != (o.pc & 0xFF00) {
-      o.cycles++
+    if (o.addr_abs & 0xFF00) != (o.Pc & 0xFF00) {
+      o.Cycles++
     }
 
-    o.pc = o.addr_abs
+    o.Pc = o.addr_abs
   }
 
   return 0
 }
 func (cpu *Olc6502) BNE(o *Olc6502) uint8 {
     if o.GetFlag("Z") == 0 {
-    o.cycles++
-    o.addr_abs = o.pc + o.addr_rel
+    o.Cycles++
+    o.addr_abs = o.Pc + o.addr_rel
 
-    if (o.addr_abs & 0xFF00) != (o.pc & 0xFF00) {
-      o.cycles++
+    if (o.addr_abs & 0xFF00) != (o.Pc & 0xFF00) {
+      o.Cycles++
     }
 
-    o.pc = o.addr_abs
+    o.Pc = o.addr_abs
   }
 
   return 0
 }
 func (cpu *Olc6502) BPL(o *Olc6502) uint8 {
     if o.GetFlag("N") == 0 {
-    o.cycles++
-    o.addr_abs = o.pc + o.addr_rel
+    o.Cycles++
+    o.addr_abs = o.Pc + o.addr_rel
 
-    if (o.addr_abs & 0xFF00) != (o.pc & 0xFF00) {
-      o.cycles++
+    if (o.addr_abs & 0xFF00) != (o.Pc & 0xFF00) {
+      o.Cycles++
     }
 
-    o.pc = o.addr_abs
+    o.Pc = o.addr_abs
   }
 
   return 0
 }
 func (cpu *Olc6502) BRK(o *Olc6502) uint8 {
-  o.pc++
+  o.Pc++
 
   o.SetFlag("I", true)
-  o.write(0x0100 + uint16(o.stkp), uint8((o.pc >> 8) & 0x00FF))
-  o.stkp--
-  o.write(0x0100 + uint16(o.stkp), uint8(o.pc & 0x00FF))
-  o.stkp--
+  o.write(0x0100 + uint16(o.Stkp), uint8((o.Pc >> 8) & 0x00FF))
+  o.Stkp--
+  o.write(0x0100 + uint16(o.Stkp), uint8(o.Pc & 0x00FF))
+  o.Stkp--
 
   o.SetFlag("B", true)
-  o.write(0x0100 + uint16(o.stkp), o.status)
-  o.stkp--
+  o.write(0x0100 + uint16(o.Stkp), o.Status)
+  o.Stkp--
   o.SetFlag("B", false)
 
-  o.pc = uint16(o.read(0xFFFE)) | uint16(o.read(0xFFFF) << 8)
+  o.Pc = uint16(o.Read(0xFFFE)) | uint16(o.Read(0xFFFF) << 8)
   return 0
 }
 func (cpu *Olc6502) BVC(o *Olc6502) uint8 {
     if o.GetFlag("V") == 0 {
-    o.cycles++
-    o.addr_abs = o.pc + o.addr_rel
+    o.Cycles++
+    o.addr_abs = o.Pc + o.addr_rel
 
-    if (o.addr_abs & 0xFF00) != (o.pc & 0xFF00) {
-      o.cycles++
+    if (o.addr_abs & 0xFF00) != (o.Pc & 0xFF00) {
+      o.Cycles++
     }
 
-    o.pc = o.addr_abs
+    o.Pc = o.addr_abs
   }
 
   return 0
 }
 func (cpu *Olc6502) BVS(o *Olc6502) uint8 {
     if o.GetFlag("V") == 1 {
-    o.cycles++
-    o.addr_abs = o.pc + o.addr_rel
+    o.Cycles++
+    o.addr_abs = o.Pc + o.addr_rel
 
-    if (o.addr_abs & 0xFF00) != (o.pc & 0xFF00) {
-      o.cycles++
+    if (o.addr_abs & 0xFF00) != (o.Pc & 0xFF00) {
+      o.Cycles++
     }
 
-    o.pc = o.addr_abs
+    o.Pc = o.addr_abs
   }
 
   return 0
@@ -194,16 +194,16 @@ func (cpu *Olc6502) CLV(o *Olc6502) uint8 {
 }
 func (cpu *Olc6502) CMP(o *Olc6502) uint8 {
   o.fetch()
-  temp := uint16(o.a) - uint16(o.fetched)
-  o.SetFlag("C", o.a >= o.fetched)
+  temp := uint16(o.A) - uint16(o.fetched)
+  o.SetFlag("C", o.A >= o.fetched)
   o.SetFlag("Z", temp & 0x00FF == 0x0000)
   o.SetFlag("N", temp & 0x0080 != 0)
   return 1
 }
 func (cpu *Olc6502) CPX(o *Olc6502) uint8 {
   o.fetch()
-  temp := uint16(o.x) - uint16(o.fetched)
-  o.SetFlag("C", o.x >= o.fetched)
+  temp := uint16(o.X) - uint16(o.fetched)
+  o.SetFlag("C", o.X >= o.fetched)
   o.SetFlag("Z", temp & 0x00FF == 0x0000)
   o.SetFlag("N", temp & 0x0080 != 0)
   return 1
@@ -211,8 +211,8 @@ func (cpu *Olc6502) CPX(o *Olc6502) uint8 {
 }
 func (cpu *Olc6502) CPY(o *Olc6502) uint8 {
   o.fetch()
-  temp := uint16(o.y) - uint16(o.fetched)
-  o.SetFlag("C", o.y >= o.fetched)
+  temp := uint16(o.Y) - uint16(o.fetched)
+  o.SetFlag("C", o.Y >= o.fetched)
   o.SetFlag("Z", temp & 0x00FF == 0x0000)
   o.SetFlag("N", temp & 0x0080 != 0)
   return 1
@@ -227,22 +227,22 @@ func (cpu *Olc6502) DEC(o *Olc6502) uint8 {
   return 0
 }
 func (cpu *Olc6502) DEX(o *Olc6502) uint8 {
-  o.x--
-  o.SetFlag("Z", o.x == 0x00)
-  o.SetFlag("N", o.x & 0x80 != 0)
+  o.X--
+  o.SetFlag("Z", o.X == 0x00)
+  o.SetFlag("N", o.X & 0x80 != 0)
   return 0
 }
 func (cpu *Olc6502) DEY(o *Olc6502) uint8 {
-  o.y--
-  o.SetFlag("Z", o.y == 0x00)
-  o.SetFlag("N", o.y & 0x80 != 0)
+  o.Y--
+  o.SetFlag("Z", o.Y == 0x00)
+  o.SetFlag("N", o.Y & 0x80 != 0)
   return 0
 }
 func (cpu *Olc6502) EOR(o *Olc6502) uint8 {
   o.fetch()
-  o.a = o.a ^ o.fetched
-  o.SetFlag("Z", o.a == 0x00)
-  o.SetFlag("N", o.a & 0x80 != 0)
+  o.A = o.A ^ o.fetched
+  o.SetFlag("Z", o.A == 0x00)
+  o.SetFlag("N", o.A & 0x80 != 0)
   return 1
 }
 func (cpu *Olc6502) INC(o *Olc6502) uint8 {
@@ -254,51 +254,51 @@ func (cpu *Olc6502) INC(o *Olc6502) uint8 {
   return 0
 }
 func (cpu *Olc6502) INX(o *Olc6502) uint8 {
-  o.x++
-  o.SetFlag("Z", o.x == 0x00)
-  o.SetFlag("N", o.x & 0x80 != 0)
+  o.X++
+  o.SetFlag("Z", o.X == 0x00)
+  o.SetFlag("N", o.X & 0x80 != 0)
   return 0
 }
 func (cpu *Olc6502) INY(o *Olc6502) uint8 {
-  o.y++
-  o.SetFlag("Z", o.y == 0x00)
-  o.SetFlag("N", o.y & 0x80 != 0)
+  o.Y++
+  o.SetFlag("Z", o.Y == 0x00)
+  o.SetFlag("N", o.Y & 0x80 != 0)
   return 0
 }
 func (cpu *Olc6502) JMP(o *Olc6502) uint8 {
-  o.pc = o.addr_abs
+  o.Pc = o.addr_abs
   return 0
 }
 func (cpu *Olc6502) JSR(o *Olc6502) uint8 {
-  o.pc--
+  o.Pc--
 
-  o.write(0x0100 + uint16(o.stkp), uint8(o.pc >> 8 & 0x00FF))
-  o.stkp--
-  o.write(0x0100 + uint16(o.stkp), uint8(o.pc)  & 0x00FF)
-  o.stkp--
+  o.write(0x0100 + uint16(o.Stkp), uint8(o.Pc >> 8 & 0x00FF))
+  o.Stkp--
+  o.write(0x0100 + uint16(o.Stkp), uint8(o.Pc)  & 0x00FF)
+  o.Stkp--
 
-  o.pc = o.addr_abs
+  o.Pc = o.addr_abs
   return 0
 }
 func (cpu *Olc6502) LDA(o *Olc6502) uint8 {
   o.fetch()
-  o.a = o.fetched
-  o.SetFlag("Z", o.a == 0x00)
-  o.SetFlag("N", o.a & 0x80 != 0)
+  o.A = o.fetched
+  o.SetFlag("Z", o.A == 0x00)
+  o.SetFlag("N", o.A & 0x80 != 0)
   return 1
 }
 func (cpu *Olc6502) LDX(o *Olc6502) uint8 {
   o.fetch()
-  o.x = o.fetched
-  o.SetFlag("Z", o.x == 0x00)
-  o.SetFlag("N", o.x & 0x80 != 0)
+  o.X = o.fetched
+  o.SetFlag("Z", o.X == 0x00)
+  o.SetFlag("N", o.X & 0x80 != 0)
   return 1
 }
 func (cpu *Olc6502) LDY(o *Olc6502) uint8 {
   o.fetch()
-  o.y = o.fetched
-  o.SetFlag("Z", o.y == 0x00)
-  o.SetFlag("N", o.y & 0x80 != 0)
+  o.Y = o.fetched
+  o.SetFlag("Z", o.Y == 0x00)
+  o.SetFlag("N", o.Y & 0x80 != 0)
   return 1
 }
 func (cpu *Olc6502) LSR(o *Olc6502) uint8 {
@@ -311,7 +311,7 @@ func (cpu *Olc6502) LSR(o *Olc6502) uint8 {
   o.SetFlag("N", temp & 0x0080 != 0)
 
   if helpers.FindFunc(o.lookup[o.opcode].addrmode) == helpers.FindFunc(o.IMP) {
-    o.a = temp & 0x00FF
+    o.A = temp & 0x00FF
   } else {
     o.write(o.addr_abs, temp & 0x00FF)
   }
@@ -331,33 +331,33 @@ func (cpu *Olc6502) NOP(o *Olc6502) uint8 {
 }
 func (cpu *Olc6502) ORA(o *Olc6502) uint8 {
   o.fetch()
-  o.a = o.a | o.fetched
-  o.SetFlag("Z", o.a == 0x00)
-  o.SetFlag("N", o.a & 0x80 != 0)
+  o.A = o.A | o.fetched
+  o.SetFlag("Z", o.A == 0x00)
+  o.SetFlag("N", o.A & 0x80 != 0)
   return 1
 }
 func (cpu *Olc6502) PHA(o *Olc6502) uint8 {
-  o.write(0x0100 + uint16(o.stkp), o.a)
-  o.stkp--
+  o.write(0x0100 + uint16(o.Stkp), o.A)
+  o.Stkp--
   return 0
 }
 func (cpu *Olc6502) PHP(o *Olc6502) uint8 {
-  o.write(0x0100 + uint16(o.stkp), o.status | o.FLAGS6502["B"] | o.FLAGS6502["U"])
+  o.write(0x0100 + uint16(o.Stkp), o.Status | o.FLAGS6502["B"] | o.FLAGS6502["U"])
   o.SetFlag("B", false)
   o.SetFlag("U", false)
-  o.stkp--
+  o.Stkp--
   return 0
 }
 func (cpu *Olc6502) PLA(o *Olc6502) uint8 {
-  o.stkp++
-  o.a = o.read(0x0100 + uint16(o.stkp))
-  o.SetFlag("Z", o.a == 0x00)
-  o.SetFlag("N", (o.a & 0x80) != 0)
+  o.Stkp++
+  o.A = o.Read(0x0100 + uint16(o.Stkp))
+  o.SetFlag("Z", o.A == 0x00)
+  o.SetFlag("N", (o.A & 0x80) != 0)
   return 0
 }
 func (cpu *Olc6502) PLP(o *Olc6502) uint8 {
-  o.stkp++
-  o.status = o.read(0x0100 + uint16(o.stkp))
+  o.Stkp++
+  o.Status = o.Read(0x0100 + uint16(o.Stkp))
   o.SetFlag("U", true)
   return 0
 }
@@ -369,7 +369,7 @@ func (cpu *Olc6502) ROL(o *Olc6502) uint8 {
   o.SetFlag("N", temp & 0x0080 != 0)
 
   if helpers.FindFunc(o.lookup[o.opcode].addrmode) == helpers.FindFunc(o.IMP) {
-    o.a = uint8(temp) & 0x00FF
+    o.A = uint8(temp) & 0x00FF
   } else {
     o.write(o.addr_abs, uint8(temp) & 0x00FF)
   }
@@ -388,7 +388,7 @@ func (cpu *Olc6502) ROR(o *Olc6502) uint8 {
     o.SetFlag("N", true)
   }
   if helpers.FindFunc(o.lookup[o.opcode].addrmode) == helpers.FindFunc(o.IMP) {
-    o.a = uint8(temp) & 0x00FF
+    o.A = uint8(temp) & 0x00FF
   } else {
     o.write(o.addr_abs, uint8(temp) & 0x00FF)
   }
@@ -396,35 +396,35 @@ func (cpu *Olc6502) ROR(o *Olc6502) uint8 {
   return 0
 }
 func (cpu *Olc6502) RTI(o *Olc6502) uint8 {
-  o.stkp++
-  o.status = o.read(0x0100 + uint16(o.stkp))
-  o.status &= ^o.FLAGS6502["B"]
-  o.status &= ^o.FLAGS6502["U"]
+  o.Stkp++
+  o.Status = o.Read(0x0100 + uint16(o.Stkp))
+  o.Status &= ^o.FLAGS6502["B"]
+  o.Status &= ^o.FLAGS6502["U"]
 
-  o.stkp++
-  o.pc = uint16(o.read(0x0100 + uint16(o.stkp)))
-  o.stkp++
-  o.pc |= uint16(o.read(0x0100 + uint16(o.stkp)) << 8)
+  o.Stkp++
+  o.Pc = uint16(o.Read(0x0100 + uint16(o.Stkp)))
+  o.Stkp++
+  o.Pc |= uint16(o.Read(0x0100 + uint16(o.Stkp)) << 8)
   return 0
 }
 func (cpu *Olc6502) RTS(o *Olc6502) uint8 {
-  o.stkp++
-  o.pc = uint16(o.read(0x0100 + uint16(o.stkp)))
-  o.stkp++
-  o.pc |= uint16(o.read(0x0100 + uint16(o.stkp)) << 8)
-  o.pc++
+  o.Stkp++
+  o.Pc = uint16(o.Read(0x0100 + uint16(o.Stkp)))
+  o.Stkp++
+  o.Pc |= uint16(o.Read(0x0100 + uint16(o.Stkp)) << 8)
+  o.Pc++
   return 0
 }
 func (cpu *Olc6502) SBC(o *Olc6502) uint8 {
   o.fetch()
   value := uint16(o.fetched ^ 0x00FF)
-  temp := uint16(uint16(o.a) + value + uint16(o.GetFlag("C")))
+  temp := uint16(uint16(o.A) + value + uint16(o.GetFlag("C")))
   o.SetFlag("C", temp > 0xFF00)
   o.SetFlag("Z", (temp & 0x00FF) == 0)
   o.SetFlag("N", (temp & 0x0080) != 0)
-  o.SetFlag("V", (temp ^ uint16(o.a) & (temp ^ value)) & 0x0080 != 0)
+  o.SetFlag("V", (temp ^ uint16(o.A) & (temp ^ value)) & 0x0080 != 0)
 
-  o.a = uint8(temp & 0x00FF)
+  o.A = uint8(temp & 0x00FF)
 
   return 1
 }
@@ -441,49 +441,49 @@ func (cpu *Olc6502) SEI(o *Olc6502) uint8 {
   return 0
 }
 func (cpu *Olc6502) STA(o *Olc6502) uint8 {
-  o.write(o.addr_abs, o.a)
+  o.write(o.addr_abs, o.A)
   return 0
 }
 func (cpu *Olc6502) STX(o *Olc6502) uint8 {
-  o.write(o.addr_abs, o.x)
+  o.write(o.addr_abs, o.X)
   return 0
 }
 func (cpu *Olc6502) STY(o *Olc6502) uint8 {
-  o.write(o.addr_abs, o.y)
+  o.write(o.addr_abs, o.Y)
   return 0
 }
 func (cpu *Olc6502) TAX(o *Olc6502) uint8 {
-  o.x = o.a
-  o.SetFlag("Z", o.x == 0x00)
-  o.SetFlag("N", o.x & 0x80 != 0)
+  o.X = o.A
+  o.SetFlag("Z", o.X == 0x00)
+  o.SetFlag("N", o.X & 0x80 != 0)
   return 0
 }
 func (cpu *Olc6502) TAY(o *Olc6502) uint8 {
-  o.y = o.a
-  o.SetFlag("Z", o.y == 0x00)
-  o.SetFlag("N", o.y & 0x80 != 0)
+  o.Y = o.A
+  o.SetFlag("Z", o.Y == 0x00)
+  o.SetFlag("N", o.Y & 0x80 != 0)
   return 0
 }
 func (cpu *Olc6502) TSX(o *Olc6502) uint8 {
-  o.x = o.stkp
-  o.SetFlag("Z", o.x == 0x00)
-  o.SetFlag("N", o.x & 0x80 != 0)
+  o.X = o.Stkp
+  o.SetFlag("Z", o.X == 0x00)
+  o.SetFlag("N", o.X & 0x80 != 0)
   return 0
 }
 func (cpu *Olc6502) TXA(o *Olc6502) uint8 {
-  o.a = o.x
-  o.SetFlag("Z", o.a == 0x00)
-  o.SetFlag("N", o.a & 0x80 != 0)
+  o.A = o.X
+  o.SetFlag("Z", o.A == 0x00)
+  o.SetFlag("N", o.A & 0x80 != 0)
   return 0
 }
 func (cpu *Olc6502) TXS(o *Olc6502) uint8 {
-  o.stkp = o.a
+  o.Stkp = o.A
   return 0
 }
 func (cpu *Olc6502) TYA(o *Olc6502) uint8 {
-  o.a = o.y
-  o.SetFlag("Z", o.a == 0x00)
-  o.SetFlag("N", o.a & 0x80 != 0)
+  o.A = o.Y
+  o.SetFlag("Z", o.A == 0x00)
+  o.SetFlag("N", o.A & 0x80 != 0)
   return 0
 }
 func (cpu *Olc6502) XXX(o *Olc6502) uint8 {
